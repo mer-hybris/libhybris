@@ -307,6 +307,27 @@ Requires: %{name}-libnfc = %{version}-%{release}
 %description libnfc-devel
 %{summary}.
 
+%package libvibrator
+Summary: Vibrator for %{name}
+Requires(post): /sbin/ldconfig
+Requires(postun): /sbin/ldconfig
+Group:   System/Libraries
+Requires: %{name} = %{version}-%{release}
+
+%description libvibrator
+%{summary}.
+
+%package libvibrator-devel
+Summary: Vibrator development library for %{name}
+Requires(post): /sbin/ldconfig
+Requires(postun): /sbin/ldconfig
+Group:   System/Libraries
+Requires: %{name} = %{version}-%{release}
+Requires: %{name}-libvibrator = %{version}-%{release}
+
+%description libvibrator-devel
+%{summary}.
+
 %package tests
 Summary: Tests for %{name}
 Group:   System/Libraries
@@ -319,6 +340,8 @@ Requires: %{name}-libis = %{version}-%{release}
 Requires: %{name}-libsf = %{version}-%{release}
 Requires: %{name}-libui = %{version}-%{release}
 Requires: %{name}-libsync = %{version}-%{release}
+Requires: %{name}-libvibrator = %{version}-%{release}
+
 
 %description tests
 %{summary}.
@@ -382,6 +405,9 @@ rm %{buildroot}/%{_libdir}/*.la %{buildroot}/%{_libdir}/libhybris/*.la
 
 %post libnfc -p /sbin/ldconfig
 %postun libnfc -p /sbin/ldconfig
+
+%post libvibrator -p /sbin/ldconfig
+%postun libvibrator -p /sbin/ldconfig
 
 %files
 %defattr(-,root,root,-)
@@ -535,6 +561,15 @@ rm %{buildroot}/%{_libdir}/*.la %{buildroot}/%{_libdir}/libhybris/*.la
 %defattr(-,root,root,-)
 %{_libdir}/libnfc_*.so
 %{_libdir}/pkgconfig/libnfc_*.pc
+
+%files libvibrator
+%defattr(-,root,root,-)
+%{_libdir}/libvibrator.so.*
+
+%files libvibrator-devel
+%defattr(-,root,root,-)
+%{_libdir}/libvibrator.so
+%{_libdir}/pkgconfig/libvibrator.pc
 
 %files tests
 %defattr(-,root,root,-)
