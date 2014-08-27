@@ -22,6 +22,23 @@
 #include <math.h>
 #include <stddef.h>
 
+/* Regression test: make sure that there's no conflict between
+ * the TLS (thread-local storage) slots used via libEGL/bionic
+ * and the TLS space allocated by the host toolchain. The array
+ * declared here should remain unchanged regardless of GL activity.
+ * Since this array is the first __thread storage declared in the main
+ * program, glibc will allocate it before any others.
+ */
+#define SLOT_FILLER (void *) 0x11122111  /* arbitrary non-zero value */
+#define S SLOT_FILLER
+__thread void *tls_space[64] = {
+    S, S, S, S, S, S, S, S,  S, S, S, S, S, S, S, S,
+    S, S, S, S, S, S, S, S,  S, S, S, S, S, S, S, S,
+    S, S, S, S, S, S, S, S,  S, S, S, S, S, S, S, S,
+    S, S, S, S, S, S, S, S,  S, S, S, S, S, S, S, S,
+};
+#undef S
+
 const char vertex_src [] =
 "                                        \
    attribute vec4        position;       \
@@ -175,6 +192,18 @@ int main(int argc, char **argv)
     printf("terminated\n");
     android_dlclose(baz);
 #endif
+
+	int bad_tls = 0;
+	for (i=0; i<64; ++i) {
+		if (tls_space[i] != SLOT_FILLER) {
+			printf("TLS array slot %d polluted: %p\n", i, tls_space[i]);
+			bad_tls++;
+		}
+	}
+	if (bad_tls)
+		return 1;
+
+	return 0;
 }
 
 // vim:ts=4:sw=4:noexpandtab
