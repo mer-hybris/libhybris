@@ -17,6 +17,8 @@
 
 /* EGL function pointers */
 #define EGL_EGLEXT_PROTOTYPES
+/* For RTLD_DEFAULT */
+#define _GNU_SOURCE
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 #include <GLES2/gl2.h>
@@ -134,8 +136,8 @@ struct ws_egl_interface hybris_egl_interface = {
 	egl_helper_get_mapping,
 };
 
-#define EGL_DLSYM(fptr, sym) do { if (_libegl == NULL) { _init_androidegl(); }; if (*(fptr) == NULL) { *(fptr) = (void *) android_dlsym(_libegl, sym); } } while (0) 
-#define GLESv2_DLSYM(fptr, sym) do { if (_libgles == NULL) { _init_androidegl(); }; if (*(fptr) == NULL) { *(fptr) = (void *) android_dlsym(_libgles, sym); } } while (0) 
+#define EGL_DLSYM(fptr, sym) do { if (_libegl == NULL) { _init_androidegl(); }; if (*(fptr) == NULL) { *(fptr) = (void *) android_dlsym(_libegl, sym); } } while (0)
+#define GLESv2_DLSYM(fptr, sym) do { if (_libgles == NULL) { _init_androidegl(); }; if (*(fptr) == NULL) { *(fptr) = (void *) android_dlsym(_libgles, sym); } } while (0)
 
 EGLint eglGetError(void)
 {
@@ -252,12 +254,17 @@ EGLSurface eglCreateWindowSurface(EGLDisplay dpy, EGLConfig config,
 {
 	EGL_DLSYM(&_eglCreateWindowSurface, "eglCreateWindowSurface");
 
+	HYBRIS_TRACE_BEGIN("hybris-egl", "eglCreateWindowSurface", "");
 	win = ws_CreateWindow(win,  _egldisplay2NDT(dpy));
-	
+
 	assert(((struct ANativeWindowBuffer *) win)->common.magic == ANDROID_NATIVE_WINDOW_MAGIC);
 
+	HYBRIS_TRACE_BEGIN("native-egl", "eglCreateWindowSurface", "");
 	EGLSurface result = (*_eglCreateWindowSurface)(dpy, config, win, attrib_list);
+	HYBRIS_TRACE_END("native-egl", "eglCreateWindowSurface", "");
 	egl_helper_push_mapping(result, win);
+
+	HYBRIS_TRACE_END("hybris-egl", "eglCreateWindowSurface", "");
 	return result;
 }
 
@@ -353,8 +360,26 @@ EGLBoolean eglReleaseTexImage(EGLDisplay dpy, EGLSurface surface, EGLint buffer)
 
 EGLBoolean eglSwapInterval(EGLDisplay dpy, EGLint interval)
 {
+	EGLBoolean ret;
+	EGLSurface surface;
+	EGLNativeWindowType win;
+	HYBRIS_TRACE_BEGIN("hybris-egl", "eglSwapInterval", "=%d", interval);
+
+	/* Some egl implementations don't pass through the setSwapInterval
+	 * call.  Since we may support various swap intervals internally, we'll
+	 * call it anyway and then give the wrapped egl implementation a chance
+	 * to chage it. */
+	EGL_DLSYM(&_eglGetCurrentSurface, "eglGetCurrentSurface");
+	surface = (*_eglGetCurrentSurface)(EGL_DRAW);
+	if (egl_helper_has_mapping(surface))
+	    ws_setSwapInterval(dpy, egl_helper_get_mapping(surface), interval);
+
+	HYBRIS_TRACE_BEGIN("native-egl", "eglSwapInterval", "=%d", interval);
 	EGL_DLSYM(&_eglSwapInterval, "eglSwapInterval");
-	return (*_eglSwapInterval)(dpy, interval);
+	ret = (*_eglSwapInterval)(dpy, interval);
+	HYBRIS_TRACE_END("native-egl", "eglSwapInterval", "");
+	HYBRIS_TRACE_END("hybris-egl", "eglSwapInterval", "");
+	return ret;
 }
 
 EGLContext eglCreateContext(EGLDisplay dpy, EGLConfig config,
@@ -412,15 +437,32 @@ EGLBoolean eglWaitGL(void)
 EGLBoolean eglWaitNative(EGLint engine)
 {
 	EGL_DLSYM(&_eglWaitNative, "eglWaitNative");
-	return (*_eglWaitNative)(engine); 
+	return (*_eglWaitNative)(engine);
+}
+
+EGLBoolean _my_eglSwapBuffersWithDamageEXT(EGLDisplay dpy, EGLSurface surface, EGLint *rects, EGLint n_rects)
+{
+	EGLNativeWindowType win;
+	EGLBoolean ret;
+	HYBRIS_TRACE_BEGIN("hybris-egl", "eglSwapBuffersWithDamageEXT", "");
+	EGL_DLSYM(&_eglSwapBuffers, "eglSwapBuffers");
+	if (egl_helper_has_mapping(surface)) {
+		win = egl_helper_get_mapping(surface);
+		ws_prepareSwap(dpy, win, rects, n_rects);
+		ret = (*_eglSwapBuffers)(dpy, surface);
+		ws_finishSwap(dpy, win);
+	} else {
+		ret = (*_eglSwapBuffers)(dpy, surface);
+	}
+	HYBRIS_TRACE_END("hybris-egl", "eglSwapBuffersWithDamageEXT", "");
+	return ret;
 }
 
 EGLBoolean eglSwapBuffers(EGLDisplay dpy, EGLSurface surface)
 {
-	EGLBoolean ret; 
+	EGLBoolean ret;
 	HYBRIS_TRACE_BEGIN("hybris-egl", "eglSwapBuffers", "");
-	EGL_DLSYM(&_eglSwapBuffers, "eglSwapBuffers");
-	ret = (*_eglSwapBuffers)(dpy, surface);
+	ret = _my_eglSwapBuffersWithDamageEXT(dpy, surface, NULL, 0);
 	HYBRIS_TRACE_END("hybris-egl", "eglSwapBuffers", "");
 	return ret;
 }
@@ -457,15 +499,26 @@ __eglMustCastToProperFunctionPointerType eglGetProcAddress(const char *procname)
 	if (strcmp(procname, "eglCreateImageKHR") == 0)
 	{
 		return _my_eglCreateImageKHR;
-	} 
+	}
+	else if (strcmp(procname, "eglSwapBuffersWithDamageEXT") == 0)
+	{
+		return _my_eglSwapBuffersWithDamageEXT;
+	}
 	else if (strcmp(procname, "glEGLImageTargetTexture2DOES") == 0)
 	{
 		return _my_glEGLImageTargetTexture2DOES;
 	}
 	__eglMustCastToProperFunctionPointerType ret = ws_eglGetProcAddress(procname);
-	if (ret == NULL)
-		return (*_eglGetProcAddress)(procname);
-	else return ret;
+
+	if (ret == NULL) {
+#ifdef RTLD_DEFAULT
+		ret = dlsym(RTLD_DEFAULT, procname);
+		if (ret == NULL)
+#endif
+			ret = (*_eglGetProcAddress)(procname);
+	}
+
+	return ret;
 }
 
 EGLBoolean eglDestroyImageKHR(EGLDisplay dpy, EGLImageKHR image)

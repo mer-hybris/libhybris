@@ -38,6 +38,7 @@ extern "C" {
 #include <pthread.h>
 }
 #include <list>
+#include <deque>
 
 class WaylandNativeWindowBuffer : public BaseNativeWindowBuffer
 {
@@ -55,6 +56,7 @@ protected:
         ANativeWindowBuffer::format = format;
         ANativeWindowBuffer::usage = usage;
         this->wlbuffer = NULL;
+        this->creation_callback = NULL;
         this->busy = 0;
         this->other = NULL;
         this->m_alloc = alloc_device;
@@ -74,6 +76,7 @@ protected:
         ANativeWindowBuffer::handle = other->handle;
         ANativeWindowBuffer::stride = other->stride;
         this->wlbuffer = NULL;
+        this->creation_callback = NULL;
         this->busy = 0;
         this->other = other;
         this->m_alloc = NULL;
@@ -84,7 +87,9 @@ protected:
         if (this->m_alloc)
              m_alloc->free(m_alloc, this->handle);
     }
-    void wlbuffer_from_native_handle(struct android_wlegl *android_wlegl);
+    void wlbuffer_from_native_handle(struct android_wlegl *android_wlegl,
+                                     struct wl_display *display,
+                                     struct wl_event_queue *queue);
 
 protected:
     void* vaddr;
@@ -92,6 +97,7 @@ protected:
 
 public:
     struct wl_buffer *wlbuffer;
+    struct wl_callback *creation_callback;
     int busy;
     int youngest;
     ANativeWindowBuffer *other;
@@ -105,19 +111,23 @@ public:
 
     void lock();
     void unlock();
-    void resize(unsigned int width, unsigned int height);
+    void frame();
     void releaseBuffer(struct wl_buffer *buffer);
     int postBuffer(ANativeWindowBuffer *buffer);
+
+    virtual int setSwapInterval(int interval);
+    void prepareSwap(EGLint *damage_rects, EGLint damage_n_rects);
+    void finishSwap();
 
     static void sync_callback(void *data, struct wl_callback *callback, uint32_t serial);
     static void registry_handle_global(void *data, struct wl_registry *registry, uint32_t name,
                        const char *interface, uint32_t version);
     static void resize_callback(struct wl_egl_window *egl_window, void *);
+    static void free_callback(struct wl_egl_window *egl_window, void *);
     struct wl_event_queue *wl_queue;
- 
+
 protected:
     // overloads from BaseNativeWindow
-    virtual int setSwapInterval(int interval);
     virtual int dequeueBuffer(BaseNativeWindowBuffer **buffer, int *fenceFd);
     virtual int lockBuffer(BaseNativeWindowBuffer* buffer);
     virtual int queueBuffer(BaseNativeWindowBuffer* buffer, int fenceFd);
@@ -140,12 +150,16 @@ private:
     WaylandNativeWindowBuffer *addBuffer();
     void destroyBuffer(WaylandNativeWindowBuffer *);
     void destroyBuffers();
+    int readQueue(bool block);
+
     std::list<WaylandNativeWindowBuffer *> m_bufList;
     std::list<WaylandNativeWindowBuffer *> fronted;
     std::list<WaylandNativeWindowBuffer *> posted;
     std::list<WaylandNativeWindowBuffer *> post_registered;
+    std::deque<WaylandNativeWindowBuffer *> queue;
     struct wl_egl_window *m_window;
     struct wl_display *m_display;
+    WaylandNativeWindowBuffer *m_lastBuffer;
     unsigned int m_width;
     unsigned int m_height;
     unsigned int m_format;
@@ -157,8 +171,11 @@ private:
     struct wl_registry *registry;
     pthread_mutex_t mutex;
     pthread_cond_t cond;
+    int m_queueReads;
     int m_freeBufs;
+    EGLint *m_damage_rects, m_damage_n_rects;
     struct wl_callback *frame_callback;
+    int m_swap_interval;
     static int wayland_roundtrip(WaylandNativeWindow *display);
 };
 

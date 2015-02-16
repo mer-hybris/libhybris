@@ -30,12 +30,16 @@
 #include <assert.h>
 #include <fcntl.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <assert.h>
 extern "C" {
 #include <eglplatformcommon.h>
 };
+#include <eglhybris.h>
+
+#include <EGL/eglext.h>
 
 extern "C" {
 #include <wayland-client.h>
@@ -49,6 +53,13 @@ extern "C" {
 static gralloc_module_t *gralloc = 0;
 static alloc_device_t *alloc = 0;
 
+
+static const char *  (*_eglQueryString)(EGLDisplay dpy, EGLint name) = NULL;
+static __eglMustCastToProperFunctionPointerType (*_eglGetProcAddress)(const char *procname) = NULL;
+static EGLSyncKHR (*_eglCreateSyncKHR)(EGLDisplay dpy, EGLenum type, const EGLint *attrib_list) = NULL;
+static EGLBoolean (*_eglDestroySyncKHR)(EGLDisplay dpy, EGLSyncKHR sync) = NULL;
+static EGLint (*_eglClientWaitSyncKHR)(EGLDisplay dpy, EGLSyncKHR sync, EGLint flags, EGLTimeKHR timeout) = NULL;
+
 extern "C" void waylandws_init_module(struct ws_egl_interface *egl_iface)
 {
 	int err;
@@ -58,6 +69,33 @@ extern "C" void waylandws_init_module(struct ws_egl_interface *egl_iface)
 	eglplatformcommon_init(egl_iface, gralloc, alloc);
 }
 
+static void _init_egl_funcs(EGLDisplay display)
+{
+	if (_eglQueryString != NULL)
+		return;
+
+	_eglQueryString = (const char * (*)(void*, int))
+			hybris_android_egl_dlsym("eglQueryString");
+	assert(_eglQueryString);
+	_eglGetProcAddress = (__eglMustCastToProperFunctionPointerType (*)(const char *))
+			hybris_android_egl_dlsym("eglGetProcAddress");
+	assert(_eglGetProcAddress);
+
+	const char *extensions = (*_eglQueryString)(display, EGL_EXTENSIONS);
+
+	if (strstr(extensions, "EGL_KHR_fence_sync")) {
+		_eglCreateSyncKHR = (PFNEGLCREATESYNCKHRPROC)
+				(*_eglGetProcAddress)("eglCreateSyncKHR");
+		assert(_eglCreateSyncKHR);
+		_eglDestroySyncKHR = (PFNEGLDESTROYSYNCKHRPROC)
+				(*_eglGetProcAddress)("eglDestroySyncKHR");
+		assert(_eglDestroySyncKHR);
+		_eglClientWaitSyncKHR = (PFNEGLCLIENTWAITSYNCKHRPROC)
+				(*_eglGetProcAddress)("eglClientWaitSyncKHR");
+		assert(_eglClientWaitSyncKHR);
+	}
+}
+
 extern "C" int waylandws_IsValidDisplay(EGLNativeDisplayType display)
 {
 	return 1;
@@ -65,6 +103,17 @@ extern "C" int waylandws_IsValidDisplay(EGLNativeDisplayType display)
 
 extern "C" EGLNativeWindowType waylandws_CreateWindow(EGLNativeWindowType win, EGLNativeDisplayType display)
 {
+	struct wl_egl_window *wl_window = (struct wl_egl_window*) win;
+	struct wl_display *wl_display = (struct wl_display*) display;
+
+	if (wl_window == 0 || wl_display == 0) {
+		HYBRIS_ERROR("Running with EGL_PLATFORM=wayland without setup wayland environment is not possible");
+		HYBRIS_ERROR("If you want to run a standlone EGL client do it like this:");
+		HYBRIS_ERROR(" $ export EGL_PLATFORM=null");
+		HYBRIS_ERROR(" $ test_glevs2");
+		abort();
+	}
+
 	WaylandNativeWindow *window = new WaylandNativeWindow((struct wl_egl_window *) win, (struct wl_display *) display, alloc);
 	window->common.incRef(&window->common);
 	return (EGLNativeWindowType) static_cast<struct ANativeWindow *>(window);
@@ -98,6 +147,45 @@ extern "C" void waylandws_passthroughImageKHR(EGLContext *ctx, EGLenum *target, 
 	eglplatformcommon_passthroughImageKHR(ctx, target, buffer, attrib_list);
 }
 
+extern "C" const char *waylandws_eglQueryString(EGLDisplay dpy, EGLint name, const char *(*real_eglQueryString)(EGLDisplay dpy, EGLint name))
+{
+	const char *ret = eglplatformcommon_eglQueryString(dpy, name, real_eglQueryString);
+	if (name == EGL_EXTENSIONS)
+	{
+		assert(ret != NULL);
+		static char eglextensionsbuf[512];
+		snprintf(eglextensionsbuf, 510, "%s %s", ret,
+			"EGL_EXT_swap_buffers_with_damage "
+		);
+		ret = eglextensionsbuf;
+	}
+	return ret;
+}
+
+extern "C" void waylandws_prepareSwap(EGLDisplay dpy, EGLNativeWindowType win, EGLint *damage_rects, EGLint damage_n_rects)
+{
+	WaylandNativeWindow *window = static_cast<WaylandNativeWindow *>((struct ANativeWindow *)win);
+	window->prepareSwap(damage_rects, damage_n_rects);
+}
+
+extern "C" void waylandws_finishSwap(EGLDisplay dpy, EGLNativeWindowType win)
+{
+	_init_egl_funcs(dpy);
+	WaylandNativeWindow *window = static_cast<WaylandNativeWindow *>((struct ANativeWindow *)win);
+	if (_eglCreateSyncKHR) {
+		EGLSyncKHR sync = (*_eglCreateSyncKHR)(dpy, EGL_SYNC_FENCE_KHR, NULL);
+		(*_eglClientWaitSyncKHR)(dpy, sync, EGL_SYNC_FLUSH_COMMANDS_BIT_KHR, EGL_FOREVER_KHR);
+		(*_eglDestroySyncKHR)(dpy, sync);
+	}
+	window->finishSwap();
+}
+
+extern "C" void waylandws_setSwapInterval(EGLDisplay dpy, EGLNativeWindowType win, EGLint interval)
+{
+	WaylandNativeWindow *window = static_cast<WaylandNativeWindow *>((struct ANativeWindow *)win);
+	window->setSwapInterval(interval);
+}
+
 struct ws_module ws_module_info = {
 	waylandws_init_module,
 	waylandws_IsValidDisplay,
@@ -105,7 +193,10 @@ struct ws_module ws_module_info = {
 	waylandws_DestroyWindow,
 	waylandws_eglGetProcAddress,
 	waylandws_passthroughImageKHR,
-	eglplatformcommon_eglQueryString
+	waylandws_eglQueryString,
+	waylandws_prepareSwap,
+	waylandws_finishSwap,
+	waylandws_setSwapInterval,
 };
 
 
