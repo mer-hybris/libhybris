@@ -16,12 +16,12 @@
  ** License version 2.1 as published by the Free Software Foundation
  ** and appearing in the file license.lgpl included in the packaging
  ** of this file.
- ** 
+ **
  ** This library is distributed in the hope that it will be useful,
  ** but WITHOUT ANY WARRANTY; without even the implied warranty of
  ** MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  ** Lesser General Public License for more details.
- ** 
+ **
  ****************************************************************************************/
 
 #include <android-config.h>
@@ -114,7 +114,7 @@ extern "C" EGLNativeWindowType waylandws_CreateWindow(EGLNativeWindowType win, E
 		abort();
 	}
 
-	WaylandNativeWindow *window = new WaylandNativeWindow((struct wl_egl_window *) win, (struct wl_display *) display, alloc);
+	WaylandNativeWindow *window = new WaylandNativeWindow((struct wl_egl_window *) win, (struct wl_display *) display, alloc, gralloc);
 	window->common.incRef(&window->common);
 	return (EGLNativeWindowType) static_cast<struct ANativeWindow *>(window);
 }
@@ -132,7 +132,7 @@ extern "C" int waylandws_post(EGLNativeWindowType win, void *buffer)
 	return ((WaylandNativeWindow *) eglwin->nativewindow)->postBuffer((ANativeWindowBuffer *) buffer);
 }
 
-extern "C" __eglMustCastToProperFunctionPointerType waylandws_eglGetProcAddress(const char *procname) 
+extern "C" __eglMustCastToProperFunctionPointerType waylandws_eglGetProcAddress(const char *procname)
 {
 	if (strcmp(procname, "eglHybrisWaylandPostBuffer") == 0)
 	{
