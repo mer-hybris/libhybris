@@ -1,12 +1,12 @@
 Name:      libhybris
-Version:   0.0.0
+Version:   0.0.5
 Release:   1%{?dist}
 Summary:   Utilize Bionic-based HW adaptations on glibc systems
 
 Group:	   System
 License:   Apache 2.0
 URL:	   https://github.com/libhybris/libhybris
-Source:    %{name}-%{version}.tar.bz2
+Source:    %{name}-%{version}.tar.gz
 BuildRequires: libtool
 BuildRequires: pkgconfig(wayland-client)
 # When droid-hal-ha builds for a specific HA it should provide
