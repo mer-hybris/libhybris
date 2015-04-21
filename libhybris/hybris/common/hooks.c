@@ -1263,13 +1263,6 @@ FP_ATTRIB static double my_strtod(const char *nptr, char **endptr)
 
 extern int __cxa_atexit(void (*)(void*), void*, void*);
 
-static __thread void *tls_hooks[16];
-
-void *__get_tls_hooks()
-{
-  return tls_hooks;
-}
-
 static struct _hook hooks[] = {
     {"property_get", property_get },
     {"property_set", property_set },
@@ -1508,7 +1501,6 @@ static struct _hook hooks[] = {
     /* grp.h */
     {"getgrgid", getgrgid},
     {"__cxa_atexit", __cxa_atexit},
-    {"__get_tls_hooks", __get_tls_hooks},
     {NULL, NULL},
 };
 
