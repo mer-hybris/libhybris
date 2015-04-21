@@ -105,7 +105,6 @@ public:
 
     void lock();
     void unlock();
-    void resize(unsigned int width, unsigned int height);
     void releaseBuffer(struct wl_buffer *buffer);
     int postBuffer(ANativeWindowBuffer *buffer);
 
@@ -114,7 +113,7 @@ public:
                        const char *interface, uint32_t version);
     static void resize_callback(struct wl_egl_window *egl_window, void *);
     struct wl_event_queue *wl_queue;
- 
+
 protected:
     // overloads from BaseNativeWindow
     virtual int setSwapInterval(int interval);
