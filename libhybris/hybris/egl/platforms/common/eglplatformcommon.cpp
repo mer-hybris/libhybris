@@ -147,9 +147,8 @@ extern "C" EGLBoolean eglplatformcommon_eglHybrisCreateNativeBuffer(EGLint width
 
 	if (ret == 0)
 	{
-	        RemoteWindowBuffer *buf = new RemoteWindowBuffer(width, height, _stride, format, usage, _handle, my_gralloc, my_alloc);
+		RemoteWindowBuffer *buf = new RemoteWindowBuffer(width, height, _stride, format, usage, _handle, my_gralloc);
 		buf->common.incRef(&buf->common);
-		buf->setAllocated(true);
 		*buffer = (EGLClientBuffer) static_cast<ANativeWindowBuffer *>(buf);
 		*stride = _stride;
 		return EGL_TRUE;
