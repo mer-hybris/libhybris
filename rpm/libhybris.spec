@@ -427,6 +427,9 @@ rm %{buildroot}/%{_libdir}/*.la %{buildroot}/%{_libdir}/libhybris/*.la
 %{_includedir}/hybris/input/*.h
 %{_includedir}/hybris/properties/properties.h
 %{_includedir}/hybris/dlfcn/dlfcn.h
+%{_includedir}/hybris/common/binding.h
+%{_includedir}/hybris/common/dlfcn.h
+%{_includedir}/hybris/common/floating_point_abi.h
 %{_libdir}/libhybris-common.so
 %{_libdir}/libandroid-properties.so
 %{_libdir}/pkgconfig/libandroid-properties.pc
