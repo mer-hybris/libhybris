@@ -78,7 +78,7 @@ extract_headers_to() {
     while [ $# -gt 0 ]; do
         SOURCE_PATH=$ANDROID_ROOT/$1
         if [ -d $SOURCE_PATH ]; then
-            for file in $SOURCE_PATH/*; do
+            for file in $SOURCE_PATH/*.h; do
                 echo "    $1/$(basename $file)"
                 mkdir -p $TARGET_DIRECTORY
                 cp $file $TARGET_DIRECTORY/
@@ -147,6 +147,17 @@ cat > $HEADERPATH/android-config.h << EOF
 #endif
 EOF
 
+cat <<< 'Name: Android header files
+Description: Header files needed to write applications for the Android platform
+Version: androidversion
+
+prefix=/usr
+exec_prefix=${prefix}
+includedir=${prefix}/include
+
+Cflags: -I${includedir}/android' > $HEADERPATH/android-headers.pc
+sed -i -e s:androidversion:$MAJOR.$MINOR.$PATCH:g $HEADERPATH/android-headers.pc
+
 extract_headers_to hardware \
     hardware/libhardware/include/hardware
 
@@ -156,6 +167,9 @@ extract_headers_to hardware_legacy \
 
 extract_headers_to cutils \
     system/core/include/cutils
+
+extract_headers_to log \
+    system/core/include/log
 
 extract_headers_to system \
     system/core/include/system
@@ -177,6 +191,9 @@ extract_headers_to libnfc-nxp \
 extract_headers_to private \
     system/core/include/private/android_filesystem_config.h
 
+extract_headers_to linux \
+    external/kernel-headers/original/linux/android_alarm.h \
+    external/kernel-headers/original/linux/binder.h
 
 # In order to make it easier to trace back the origins of headers, fetch
 # some repository information from the Git source tree (if available).
@@ -189,6 +206,7 @@ GIT_PROJECTS="
     hardware/libhardware_legacy
     system/core
     external/libnfc-nxp
+    external/linux-headers
 "
 
 echo "Extracting Git revision information"
@@ -228,7 +246,8 @@ all:
 
 install:
 	mkdir -p \$(DESTDIR)/\$(INCLUDEDIR)
-	cp android-config.h android-version.h \$(DESTDIR)/\$(INCLUDEDIR)
+	cp android-config.h android-version.h android-headers.pc \$(DESTDIR)/\$(INCLUDEDIR)
+	sed -i -e s:prefix=/usr:prefix=\$(PREFIX):g \$(DESTDIR)/\$(INCLUDEDIR)/android-headers.pc
 	cp -r hardware \$(DESTDIR)/\$(INCLUDEDIR)
 	cp -r hardware_legacy \$(DESTDIR)/\$(INCLUDEDIR)
 	cp -r cutils \$(DESTDIR)/\$(INCLUDEDIR)

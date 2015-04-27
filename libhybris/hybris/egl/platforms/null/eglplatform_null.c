@@ -3,11 +3,16 @@
 #include <dlfcn.h>
 #include <stdlib.h>
 
-#include <hybris/internal/binding.h>
+#include <hybris/common/binding.h>
+#include <eglplatformcommon.h>
+#include "logging.h"
 
 static void * (*_androidCreateDisplaySurface)();
 
 static void *_libui = NULL;
+
+static gralloc_module_t *gralloc = 0;
+static alloc_device_t *alloc = 0;
 
 static void _init_androidui()
 {
@@ -25,14 +30,25 @@ static EGLNativeWindowType android_createDisplaySurface()
 
 static void nullws_init_module(struct ws_egl_interface *egl_iface)
 {
+	int err;
+	hw_get_module(GRALLOC_HARDWARE_MODULE_ID, (const hw_module_t **) &gralloc);
+	err = gralloc_open((const hw_module_t *) gralloc, &alloc);
+	TRACE("++ %lu wayland: got gralloc %p err:%s", pthread_self(), gralloc, strerror(-err));
+	eglplatformcommon_init(egl_iface, gralloc, alloc);
+
 }
 
-static int nullws_IsValidDisplay(EGLNativeDisplayType display)
+static struct _EGLDisplay *nullws_GetDisplay(EGLNativeDisplayType display)
 {
-	return 1;
+	return malloc(sizeof(struct _EGLDisplay));
 }
 
-static EGLNativeWindowType nullws_CreateWindow(EGLNativeWindowType win, EGLNativeDisplayType display)
+static void nullws_Terminate(struct _EGLDisplay *dpy)
+{
+	free(dpy);
+}
+
+static EGLNativeWindowType nullws_CreateWindow(EGLNativeWindowType win, struct _EGLDisplay *display)
 {
 	if (win == 0)
 	{
@@ -47,28 +63,14 @@ static void nullws_DestroyWindow(EGLNativeWindowType win)
 	// TODO: Cleanup?
 }
 
-static __eglMustCastToProperFunctionPointerType nullws_eglGetProcAddress(const char *procname) 
-{
-	return NULL;
-}
-
-static void nullws_passthroughImageKHR(EGLContext *ctx, EGLenum *target, EGLClientBuffer *buffer, const EGLint **attrib_list)
-{
-}
-
-const char *nullws_eglQueryString(EGLDisplay dpy, EGLint name, const char *(*real_eglQueryString)(EGLDisplay dpy, EGLint name))
-{
-	return (*real_eglQueryString)(dpy, name);
-}
-
-
 struct ws_module ws_module_info = {
 	nullws_init_module,
-	nullws_IsValidDisplay,
+	nullws_GetDisplay,
+	nullws_Terminate,
 	nullws_CreateWindow,
 	nullws_DestroyWindow,
-	nullws_eglGetProcAddress,
-	nullws_passthroughImageKHR,
-	nullws_eglQueryString
+	eglplatformcommon_eglGetProcAddress,
+	eglplatformcommon_passthroughImageKHR,
+	eglplatformcommon_eglQueryString
 };
 
