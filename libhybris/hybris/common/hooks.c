@@ -2,7 +2,6 @@
  * Copyright (c) 2012 Carsten Munk <carsten.munk@gmail.com>
  * Copyright (c) 2012 Canonical Ltd
  * Copyright (c) 2013 Christophe Chapuis <chris.chapuis@gmail.com>
- * Copyright (c) 2013 Intel Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +17,7 @@
  *
  */
 
-#include <hybris/internal/floating_point_abi.h>
+#include <hybris/common/binding.h>
 
 #include "hooks_shm.h"
 
@@ -33,15 +32,17 @@
 #include <strings.h>
 #include <dlfcn.h>
 #include <pthread.h>
+#include <sys/xattr.h>
+#include <grp.h>
 #include <signal.h>
 #include <errno.h>
 #include <dirent.h>
 #include <sys/types.h>
-#include <sys/xattr.h>
-#include <grp.h>
+#include <stdarg.h>
 
 #include <sys/ipc.h>
 #include <sys/shm.h>
+#include <fcntl.h>
 
 #include <netdb.h>
 #include <unistd.h>
@@ -496,8 +497,7 @@ static int my_pthread_mutex_lock_timeout_np(pthread_mutex_t *__mutex, unsigned _
         *((int *)__mutex) = (int) realmutex;
     }
 
-    /* TODO: Android uses CLOCK_MONOTONIC here but I am not sure which one to use */
-    clock_gettime(CLOCK_REALTIME, &tv);
+    clock_gettime(CLOCK_MONOTONIC_RAW, &tv);
     tv.tv_sec += __msecs/1000;
     tv.tv_nsec += (__msecs % 1000) * 1000000;
     if (tv.tv_nsec >= 1000000000) {
@@ -713,9 +713,8 @@ static int my_pthread_cond_timedwait_relative_np(pthread_cond_t *cond,
         *((unsigned int *) mutex) = (unsigned int) realmutex;
     }
 
-    /* TODO: Android uses CLOCK_MONOTONIC here but I am not sure which one to use */
     struct timespec tv;
-    clock_gettime(CLOCK_REALTIME, &tv);
+    clock_gettime(CLOCK_MONOTONIC_RAW, &tv);
     tv.tv_sec += reltime->tv_sec;
     tv.tv_nsec += reltime->tv_nsec;
     if (tv.tv_nsec >= 1000000000) {
@@ -1263,6 +1262,58 @@ FP_ATTRIB static double my_strtod(const char *nptr, char **endptr)
 
 extern int __cxa_atexit(void (*)(void*), void*, void*);
 
+struct open_redirect {
+	const char *from;
+	const char *to;
+};
+
+struct open_redirect open_redirects[] = {
+	{ "/dev/log/main", "/dev/log_main" },
+	{ "/dev/log/radio", "/dev/log_radio" },
+	{ "/dev/log/system", "/dev/log_system" },
+	{ "/dev/log/events", "/dev/log_events" },
+	{ NULL, NULL }
+};
+
+int my_open(const char *pathname, int flags, ...)
+{
+	va_list ap;
+	mode_t mode = 0;
+	const char *target_path = pathname;
+
+	if (pathname != NULL) {
+		struct open_redirect *entry = &open_redirects[0];
+		while (entry->from != NULL) {
+			if (strcmp(pathname, entry->from) == 0) {
+				target_path = entry->to;
+				break;
+			}
+			entry++;
+		}
+	}
+
+	if (flags & O_CREAT) {
+		va_start(ap, flags);
+		mode = va_arg(ap, mode_t);
+		va_end(ap);
+	}
+
+	return open(target_path, flags, mode);
+}
+
+/**
+ * NOTE: Normally we don't have to wrap __system_property_get (libc.so) as it is only used
+ * through the property_get (libcutils.so) function. However when property_get is used
+ * internally in libcutils.so we don't have any chance to hook our replacement in.
+ * Therefore we have to hook __system_property_get too and just replace it with the
+ * implementation of our internal property handling
+ */
+
+int my_system_property_get(const char *name, const char *value)
+{
+	return property_get(name, value, NULL);
+}
+
 static __thread void *tls_hooks[16];
 
 void *__get_tls_hooks()
@@ -1273,6 +1324,7 @@ void *__get_tls_hooks()
 static struct _hook hooks[] = {
     {"property_get", property_get },
     {"property_set", property_set },
+    {"__system_property_get", my_system_property_get },
     {"getenv", getenv },
     {"printf", printf },
     {"malloc", my_malloc },
@@ -1338,15 +1390,7 @@ static struct _hook hooks[] = {
     {"strncasecmp",strncasecmp},
     /* dirent.h */
     {"opendir", opendir},
-    {"fdopendir", fdopendir},
     {"closedir", closedir},
-    {"readdir", my_readdir},
-    {"readdir_r", my_readdir_r},
-    {"rewinddir", rewinddir},
-    {"seekdir", seekdir},
-    {"telldir", telldir},
-    {"dirfd", dirfd},
-    // TODO: scandir, scandirat, alphasort, versionsort
     /* pthread.h */
     {"pthread_atfork", pthread_atfork},
     {"pthread_create", my_pthread_create},
@@ -1366,7 +1410,7 @@ static struct _hook hooks[] = {
     {"pthread_mutex_lock_timeout_np", my_pthread_mutex_lock_timeout_np},
     {"pthread_mutexattr_init", pthread_mutexattr_init},
     {"pthread_mutexattr_destroy", pthread_mutexattr_destroy},
-    {"pthread_mutexattr_getttype", pthread_mutexattr_gettype},
+    {"pthread_mutexattr_gettype", pthread_mutexattr_gettype},
     {"pthread_mutexattr_settype", pthread_mutexattr_settype},
     {"pthread_mutexattr_getpshared", pthread_mutexattr_getpshared},
     {"pthread_mutexattr_setpshared", my_pthread_mutexattr_setpshared},
@@ -1488,6 +1532,25 @@ static struct _hook hooks[] = {
     {"gethostent", gethostent},
     {"strftime", strftime},
     {"sysconf", my_sysconf},
+    {"dlopen", android_dlopen},
+    {"dlerror", android_dlerror},
+    {"dlsym", android_dlsym},
+    {"dladdr", android_dladdr},
+    {"dlclose", android_dlclose},
+    /* dirent.h */
+    {"opendir", opendir},
+    {"fdopendir", fdopendir},
+    {"closedir", closedir},
+    {"readdir", my_readdir},
+    {"readdir_r", my_readdir_r},
+    {"rewinddir", rewinddir},
+    {"seekdir", seekdir},
+    {"telldir", telldir},
+    {"dirfd", dirfd},
+    /* fcntl.h */
+    {"open", my_open},
+    // TODO: scandir, scandirat, alphasort, versionsort
+    {"__get_tls_hooks", __get_tls_hooks},
     {"sscanf", sscanf},
     {"scanf", scanf},
     {"vscanf", vscanf},
@@ -1508,7 +1571,6 @@ static struct _hook hooks[] = {
     /* grp.h */
     {"getgrgid", getgrgid},
     {"__cxa_atexit", __cxa_atexit},
-    {"__get_tls_hooks", __get_tls_hooks},
     {NULL, NULL},
 };
 
