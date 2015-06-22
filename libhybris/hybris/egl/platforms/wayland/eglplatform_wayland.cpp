@@ -210,7 +210,7 @@ extern "C" int waylandws_post(EGLNativeWindowType win, void *buffer)
 extern "C" wl_buffer *waylandws_createWlBuffer(EGLDisplay dpy, EGLImageKHR image)
 {
 	egl_image *img = reinterpret_cast<egl_image *>(image);
-	if (!img || !egl_image_sanitycheck(img)) {
+	if (!img) {
 	    // The spec says we should send a EGL_BAD_PARAMETER error here, but we don't have the
 	    // means, as of now.
 	    return NULL;
@@ -250,9 +250,8 @@ extern "C" void waylandws_passthroughImageKHR(EGLContext *ctx, EGLenum *target, 
 extern "C" const char *waylandws_eglQueryString(EGLDisplay dpy, EGLint name, const char *(*real_eglQueryString)(EGLDisplay dpy, EGLint name))
 {
 	const char *ret = eglplatformcommon_eglQueryString(dpy, name, real_eglQueryString);
-	if (name == EGL_EXTENSIONS)
+	if (ret && name == EGL_EXTENSIONS)
 	{
-		assert(ret != NULL);
 		static char eglextensionsbuf[512];
 		snprintf(eglextensionsbuf, 510, "%s %s", ret,
 			"EGL_EXT_swap_buffers_with_damage EGL_WL_create_wayland_buffer_from_image"
