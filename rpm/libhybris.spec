@@ -181,27 +181,6 @@ Requires: %{name}-libhardware = %{version}-%{release}
 %description libhardware-devel
 %{summary}.
 
-%package libui
-Summary: libui for %{name}
-Requires(post): /sbin/ldconfig
-Requires(postun): /sbin/ldconfig
-Group:   System/Libraries
-Requires: %{name} = %{version}-%{release}
-
-%description libui
-%{summary}.
-
-%package libui-devel
-Summary: libui development library for %{name}
-Requires(post): /sbin/ldconfig
-Requires(postun): /sbin/ldconfig
-Group:   System/Libraries
-Requires: %{name} = %{version}-%{release}
-Requires: %{name}-libui = %{version}-%{release}
-
-%description libui-devel
-%{summary}.
-
 %package libsf
 Summary: libsf for %{name}
 Requires(post): /sbin/ldconfig
@@ -338,7 +317,6 @@ Requires: %{name}-libcamera = %{version}-%{release}
 Requires: %{name}-libhardware = %{version}-%{release}
 Requires: %{name}-libis = %{version}-%{release}
 Requires: %{name}-libsf = %{version}-%{release}
-Requires: %{name}-libui = %{version}-%{release}
 Requires: %{name}-libsync = %{version}-%{release}
 Requires: %{name}-libvibrator = %{version}-%{release}
 
@@ -392,9 +370,6 @@ rm %{buildroot}/%{_libdir}/*.la %{buildroot}/%{_libdir}/libhybris/*.la
 
 %post libhardware -p /sbin/ldconfig
 %postun libhardware -p /sbin/ldconfig
-
-%post libui -p /sbin/ldconfig
-%postun libui -p /sbin/ldconfig
 
 %post libsf -p /sbin/ldconfig
 %postun libsf -p /sbin/ldconfig
@@ -513,15 +488,6 @@ rm %{buildroot}/%{_libdir}/*.la %{buildroot}/%{_libdir}/libhybris/*.la
 %defattr(-,root,root,-)
 %{_libdir}/libhardware.so
 %{_libdir}/pkgconfig/libhardware.pc
-
-%files libui
-%defattr(-,root,root,-)
-%{_libdir}/libui.so.*
-
-%files libui-devel
-%defattr(-,root,root,-)
-%{_libdir}/libui.so
-%{_includedir}/hybris/ui/ui_compatibility_layer.h
 
 %files libsf
 %defattr(-,root,root,-)
