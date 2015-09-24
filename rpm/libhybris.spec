@@ -357,6 +357,7 @@ rm %{buildroot}/%{_libdir}/*.la %{buildroot}/%{_libdir}/libhybris/*.la
 %{_libdir}/libhybris-eglplatformcommon.so
 %{_libdir}/pkgconfig/egl.pc
 %{_libdir}/pkgconfig/hybris-egl-platform.pc
+%{_includedir}/hybris/hwcomposerwindow/hwcomposer.h
 %{_includedir}/hybris/hwcomposerwindow/hwcomposer_window.h
 %{_libdir}/libhybris-hwcomposerwindow.so
 %{_libdir}/pkgconfig/hwcomposer-egl.pc
