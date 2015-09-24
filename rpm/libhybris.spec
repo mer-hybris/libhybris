@@ -181,69 +181,6 @@ Requires: %{name}-libhardware = %{version}-%{release}
 %description libhardware-devel
 %{summary}.
 
-%package libsf
-Summary: libsf for %{name}
-Requires(post): /sbin/ldconfig
-Requires(postun): /sbin/ldconfig
-Group:   System/Libraries
-Requires: %{name} = %{version}-%{release}
-
-%description libsf
-%{summary}.
-
-%package libsf-devel
-Summary: libsf development library for %{name}
-Requires(post): /sbin/ldconfig
-Requires(postun): /sbin/ldconfig
-Group:   System/Libraries
-Requires: %{name} = %{version}-%{release}
-Requires: %{name}-libsf = %{version}-%{release}
-
-%description libsf-devel
-%{summary}.
-
-%package libcamera
-Summary: Camera access for %{name}
-Requires(post): /sbin/ldconfig
-Requires(postun): /sbin/ldconfig
-Group:   System/Libraries
-Requires: %{name} = %{version}-%{release}
-
-%description libcamera
-%{summary}.
-
-%package libcamera-devel
-Summary: Camera access development library for %{name}
-Requires(post): /sbin/ldconfig
-Requires(postun): /sbin/ldconfig
-Group:   System/Libraries
-Requires: %{name} = %{version}-%{release}
-Requires: %{name}-libcamera = %{version}-%{release}
-
-%description libcamera-devel
-%{summary}.
-
-%package libis
-Summary: libis for %{name}
-Requires(post): /sbin/ldconfig
-Requires(postun): /sbin/ldconfig
-Group:   System/Libraries
-Requires: %{name} = %{version}-%{release}
-
-%description libis
-%{summary}.
-
-%package libis-devel
-Summary: libis development library for %{name}
-Requires(post): /sbin/ldconfig
-Requires(postun): /sbin/ldconfig
-Group:   System/Libraries
-Requires: %{name} = %{version}-%{release}
-Requires: %{name}-libis = %{version}-%{release}
-
-%description libis-devel
-%{summary}.
-
 %package libsync
 Summary: libsync for %{name}
 Requires(post): /sbin/ldconfig
@@ -313,10 +250,7 @@ Group:   System/Libraries
 Requires: %{name} = %{version}-%{release}
 Requires: %{name}-libEGL = %{version}-%{release}
 Requires: %{name}-libGLESv2 = %{version}-%{release}
-Requires: %{name}-libcamera = %{version}-%{release}
 Requires: %{name}-libhardware = %{version}-%{release}
-Requires: %{name}-libis = %{version}-%{release}
-Requires: %{name}-libsf = %{version}-%{release}
 Requires: %{name}-libsync = %{version}-%{release}
 Requires: %{name}-libvibrator = %{version}-%{release}
 
@@ -371,15 +305,6 @@ rm %{buildroot}/%{_libdir}/*.la %{buildroot}/%{_libdir}/libhybris/*.la
 %post libhardware -p /sbin/ldconfig
 %postun libhardware -p /sbin/ldconfig
 
-%post libsf -p /sbin/ldconfig
-%postun libsf -p /sbin/ldconfig
-
-%post libcamera -p /sbin/ldconfig
-%postun libcamera -p /sbin/ldconfig
-
-%post libis -p /sbin/ldconfig
-%postun libis -p /sbin/ldconfig
-
 %post libsync -p /sbin/ldconfig
 %postun libsync -p /sbin/ldconfig
 
@@ -408,6 +333,9 @@ rm %{buildroot}/%{_libdir}/*.la %{buildroot}/%{_libdir}/libhybris/*.la
 %{_libdir}/libhybris-common.so
 %{_libdir}/libandroid-properties.so
 %{_libdir}/pkgconfig/libandroid-properties.pc
+%{_includedir}/hybris/camera/*.h
+%{_includedir}/hybris/surface_flinger/surface_flinger_compatibility_layer.h
+%{_includedir}/hybris/ui/ui_compatibility_layer.h
 
 
 %files libEGL
@@ -429,6 +357,7 @@ rm %{buildroot}/%{_libdir}/*.la %{buildroot}/%{_libdir}/libhybris/*.la
 %{_libdir}/libhybris-eglplatformcommon.so
 %{_libdir}/pkgconfig/egl.pc
 %{_libdir}/pkgconfig/hybris-egl-platform.pc
+%{_includedir}/hybris/hwcomposerwindow/hwcomposer.h
 %{_includedir}/hybris/hwcomposerwindow/hwcomposer_window.h
 %{_libdir}/libhybris-hwcomposerwindow.so
 %{_libdir}/pkgconfig/hwcomposer-egl.pc
@@ -488,35 +417,6 @@ rm %{buildroot}/%{_libdir}/*.la %{buildroot}/%{_libdir}/libhybris/*.la
 %defattr(-,root,root,-)
 %{_libdir}/libhardware.so
 %{_libdir}/pkgconfig/libhardware.pc
-
-%files libsf
-%defattr(-,root,root,-)
-%{_libdir}/libsf.so.*
-
-%files libsf-devel
-%defattr(-,root,root,-)
-%{_libdir}/libsf.so
-%{_includedir}/hybris/surface_flinger/surface_flinger_compatibility_layer.h
-%{_libdir}/pkgconfig/libsf.pc
-
-%files libcamera
-%defattr(-,root,root,-)
-%{_libdir}/libcamera.so.*
-
-%files libcamera-devel
-%defattr(-,root,root,-)
-%{_libdir}/libcamera.so
-%{_includedir}/hybris/camera/*.h
-%{_libdir}/pkgconfig/libcamera.pc
-
-%files libis
-%defattr(-,root,root,-)
-%{_libdir}/libis.so.*
-
-%files libis-devel
-%defattr(-,root,root,-)
-%{_libdir}/libis.so
-%{_libdir}/pkgconfig/libis.pc
 
 %files libsync
 %defattr(-,root,root,-)
