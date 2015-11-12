@@ -275,6 +275,7 @@ autoreconf -v -f -i
 %ifarch %{ix86}
   --enable-arch=x86 \
 %endif
+  --enable-property-cache \
   --with-default-hybris-ld-library-path=/usr/libexec/droid-hybris/system/lib:/vendor/lib:/system/lib
 
 make
