@@ -1,0 +1,5 @@
+RPMS/
+installroot/
+libhybris/hybris/tests/test_hwcomposer
+libhybris/hybris/tests/test_vibrator
+
