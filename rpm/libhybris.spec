@@ -3,9 +3,9 @@ Version:   0.0.0
 Release:   1%{?dist}
 Summary:   Utilize Bionic-based HW adaptations on glibc systems
 
-Group:	   System
-License:   Apache 2.0
-URL:	   https://github.com/libhybris/libhybris
+Group:     System/Libraries
+License:   ASL 2.0
+URL:       https://github.com/libhybris/libhybris
 Source:    %{name}-%{version}.tar.bz2
 BuildRequires: libtool
 BuildRequires: pkgconfig(wayland-client)
@@ -19,7 +19,6 @@ Conflicts: mesa-llvmpipe
 
 %package devel
 Summary: Common development headers for %{name}
-Group:   Development/Libraries
 Requires: %{name} = %{version}-%{release}
 
 %description devel
@@ -27,7 +26,6 @@ Requires: %{name} = %{version}-%{release}
 
 %package libEGL
 Summary: EGL for hybris
-Group: Development/Libraries
 Requires: %{name} = %{version}-%{release}
 Requires: %{name}-libhardware = %{version}-%{release}
 Requires(post): /sbin/ldconfig
@@ -40,7 +38,6 @@ Provides: libEGL.so.1
 
 %package libEGL-devel
 Summary: EGL development headers for %{name}
-Group: Development/Libraries
 Requires: %{name} = %{version}-%{release}
 Requires: %{name}-libEGL = %{version}-%{release}
 Requires: %{name}-devel = %{version}-%{release}
@@ -52,7 +49,6 @@ Provides: libEGL-devel
 
 %package libGLESv1
 Summary: OpenGL ES 1.x for %{name}
-Group: Development/Libraries
 Requires: %{name} = %{version}-%{release}
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
@@ -64,7 +60,6 @@ Provides: libGLES_CM.so.1
 
 %package libGLESv1-devel
 Summary: OpenGL ES 1.x development library for %{name}
-Group: Development/Libraries
 Requires: %{name} = %{version}-%{release}
 Requires: %{name}-libGLESv1 = %{version}-%{release}
 Requires: %{name}-devel = %{version}-%{release}
@@ -75,7 +70,6 @@ Provides: libGLESv1-devel
 
 %package libGLESv2
 Summary: OpenGL ES 2.0 for %{name}
-Group: Development/Libraries
 Requires: %{name} = %{version}-%{release}
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
@@ -87,7 +81,6 @@ Provides: libGLESv2.so.2
 
 %package libGLESv2-devel
 Summary: OpenGL ES 2.0 development library for %{name}
-Group: Development/Libraries
 Requires: %{name} = %{version}-%{release}
 Requires: %{name}-libGLESv2 = %{version}-%{release}
 Requires: %{name}-devel = %{version}-%{release}
@@ -98,7 +91,6 @@ Provides: libGLESv2-devel
 
 %package libOpenCL
 Summary: OpenCL for %{name}
-Group: Development/Libraries
 Requires: %{name} = %{version}-%{release}
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
@@ -109,7 +101,6 @@ Provides: libOpenCL
 
 %package libOpenCL-devel
 Summary: OpenCL development library for %{name}
-Group: Development/Libraries
 Requires: %{name} = %{version}-%{release}
 Requires: %{name}-libOpenCL = %{version}-%{release}
 Requires: %{name}-devel = %{version}-%{release}
@@ -120,7 +111,6 @@ Provides: libOpenCL-devel
 
 %package libOpenVG
 Summary: OpenVG for %{name}
-Group: Development/Libraries
 Requires: %{name} = %{version}-%{release}
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
@@ -131,7 +121,6 @@ Provides: libOpenVG
 
 %package libOpenVG-devel
 Summary: OpenVG development library for %{name}
-Group: Development/Libraries
 Requires: %{name} = %{version}-%{release}
 Requires: %{name}-libOpenVG = %{version}-%{release}
 Requires: %{name}-devel = %{version}-%{release}
@@ -142,7 +131,6 @@ Provides: libOpenVG-devel
 
 %package libwayland-egl
 Summary: Wayland EGL for %{name}
-Group: Development/Libraries
 Requires: %{name} = %{version}-%{release}
 Requires: %{name}-libhardware = %{version}-%{release}
 Requires: %{name}-libEGL = %{version}-%{release}
@@ -154,7 +142,6 @@ Provides: libwayland-egl
 
 %package libwayland-egl-devel
 Summary: Wayland EGL development library for %{name}
-Group: Development/Libraries
 Requires: %{name} = %{version}-%{release}
 Requires: %{name}-libwayland-egl = %{version}-%{release}
 Provides: libwayland-egl-devel
@@ -166,7 +153,6 @@ Provides: libwayland-egl-devel
 Summary: libhardware for %{name}
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
-Group:   System/Libraries
 Requires: %{name} = %{version}-%{release}
 
 %description libhardware
@@ -174,7 +160,6 @@ Requires: %{name} = %{version}-%{release}
 
 %package libhardware-devel
 Summary: libhardware development library for %{name}
-Group: Development/Libraries
 Requires: %{name}-devel = %{version}-%{release}
 Requires: %{name}-libhardware = %{version}-%{release}
 
@@ -185,7 +170,6 @@ Requires: %{name}-libhardware = %{version}-%{release}
 Summary: libsync for %{name}
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
-Group:   System/Libraries
 Requires: %{name} = %{version}-%{release}
 
 %description libsync
@@ -195,7 +179,6 @@ Requires: %{name} = %{version}-%{release}
 Summary: libsync development library for %{name}
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
-Group:   System/Libraries
 Requires: %{name} = %{version}-%{release}
 Requires: %{name}-libsync = %{version}-%{release}
 
@@ -206,7 +189,6 @@ Requires: %{name}-libsync = %{version}-%{release}
 Summary: Near Field Communication for %{name}
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
-Group:   System/Libraries
 Requires: %{name} = %{version}-%{release}
 
 %description libnfc
@@ -216,7 +198,6 @@ Requires: %{name} = %{version}-%{release}
 Summary: Near Field Communication development library for %{name}
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
-Group:   System/Libraries
 Requires: %{name} = %{version}-%{release}
 Requires: %{name}-libnfc = %{version}-%{release}
 
@@ -227,7 +208,6 @@ Requires: %{name}-libnfc = %{version}-%{release}
 Summary: Vibrator for %{name}
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
-Group:   System/Libraries
 Requires: %{name} = %{version}-%{release}
 
 %description libvibrator
@@ -237,7 +217,6 @@ Requires: %{name} = %{version}-%{release}
 Summary: Vibrator development library for %{name}
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
-Group:   System/Libraries
 Requires: %{name} = %{version}-%{release}
 Requires: %{name}-libvibrator = %{version}-%{release}
 
@@ -246,7 +225,6 @@ Requires: %{name}-libvibrator = %{version}-%{release}
 
 %package tests
 Summary: Tests for %{name}
-Group:   System/Libraries
 Requires: %{name} = %{version}-%{release}
 Requires: %{name}-libEGL = %{version}-%{release}
 Requires: %{name}-libGLESv2 = %{version}-%{release}
