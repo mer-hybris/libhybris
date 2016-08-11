@@ -46,8 +46,11 @@ if [ x$MAJOR = x -o x$MINOR = x -o x$PATCH = x ]; then
 $(IFS="." awk '/PLATFORM_VERSION := ([0-9.]+)/ { print $3; }' < $VERSION_DEFAULTS)
 EOF
 
-    if [ x$MAJOR = x -o x$MINOR = x -o x$PATCH = x ]; then
+    if [ x$MAJOR = x -o x$MINOR = x ]; then
         parse_defaults_failed
+    fi
+    if [ x$PATCH = x ]; then
+        PATCH=0
     fi
 
     echo -n "Auto-detected version: ${MAJOR}.${MINOR}.${PATCH}";echo "${PATCH2:+.${PATCH2}}${PATCH3:+.${PATCH3}}"
@@ -147,7 +150,7 @@ cat > $HEADERPATH/android-config.h << EOF
 #endif
 EOF
 
-cat > $HEADERPATH/android-headers.pc <<EOF
+cat > $HEADERPATH/android-headers.pc <<'EOF'
 Name: Android header files
 Description: Header files needed to write applications for the Android platform
 Version: androidversion
