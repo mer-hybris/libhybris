@@ -1,3 +1,3 @@
 [submodule "upstream"]
 	path = upstream
-	url = git://github.com/libhybris/libhybris.git
+	url = https://github.com/mer-hybris/libhybris.git
