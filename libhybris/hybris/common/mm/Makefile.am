@@ -1,48 +1,52 @@
-if WANT_ARCH_ARM
-ARCHFLAGS = -DHAVE_ARM_TLS_REGISTER -DANDROID_ARM_LINKER
-endif
+bionic = $(top_srcdir)/common/mm/bionic
+bionic_libc = $(bionic)/libc
 
-if  WANT_ARCH_X86
-ARCHFLAGS = -DANDROID_X86_LINKER
-endif
+modlibexecdir = $(libdir)/libhybris/linker
+modlibexec_LTLIBRARIES = mm.la
 
-noinst_LTLIBRARIES = \
-	libandroid-linker.la
+ARCH_FLAGS =
 
-libandroid_linker_la_SOURCES = \
-    linker_dlfcn.cpp \
-    linker.cpp \
-    linker_sdk_versions.cpp \
-    linker_block_allocator.cpp \
-    linker_phdr.cpp \
-    rt.cpp \
-	libc_logging.cpp \
-	assert.cpp
+AM_CFLAGS = \
+	-std=gnu99
 
-libandroid_linker_la_CPPFLAGS = \
+AM_CPPFLAGS = \
+	-fno-stack-protector \
+	-Wstrict-overflow=5
+
+AM_CXXFLAGS = \
+	-std=gnu++11 \
+	-Wold-style-cast
+
+mm_la_SOURCES = \
+	hybris_compat.cpp \
+	dlfcn.cpp \
+	linker_allocator.cpp \
+	linker_block_allocator.cpp \
+	linker.cpp \
+	linker_memory.cpp \
+	linker_phdr.cpp \
+	linker_sdk_versions.cpp \
+	rt.cpp \
+	../strlcpy.c \
+	../strlcat.c
+mm_la_CPPFLAGS = \
+	$(AM_CPPFLAGS) \
 	-I$(top_srcdir)/include \
-	$(ANDROID_HEADERS_CFLAGS) \
 	-I$(top_srcdir)/common \
-	-D_GNU_SOURCE \
-	-D__work_around_b_19059885__ \
+	-I$(bionic_libc)/ \
+	-I$(bionic_libc)/include \
 	-DDEFAULT_HYBRIS_LD_LIBRARY_PATH="\"@DEFAULT_HYBRIS_LD_LIBRARY_PATH@\"" \
-	$(ARCHFLAGS) \
-	-std=c++0x \
-	-Wno-unused-result
-
-libandroid_linker_la_CFLAGS = \
-	-I$(top_srcdir)/include \
-	$(ANDROID_HEADERS_CFLAGS) \
-	-I$(top_srcdir)/common \
-	-D_GNU_SOURCE \
-	-D__work_around_b_19059885__ \
-	-DDEFAULT_HYBRIS_LD_LIBRARY_PATH="\"@DEFAULT_HYBRIS_LD_LIBRARY_PATH@\"" \
-	$(ARCHFLAGS)
+	$(ARCH_FLAGS) \
+	$(ANDROID_HEADERS_CFLAGS)
+mm_la_LDFLAGS = \
+	-lsupc++ \
+	-module \
+	-avoid-version
 
 if WANT_DEBUG
-libandroid_linker_la_CPPFLAGS += -DLINKER_DEBUG=1 -O0 -ggdb
-libandroid_linker_la_CFLAGS += -DLINKER_DEBUG=1 -O0 -ggdb
+mm_la_CPPFLAGS += \
+	-DTRACE_DEBUG=1
 else
-libandroid_linker_la_CPPFLAGS += -DLINKER_DEBUG=0
-libandroid_linker_la_CFLAGS += -DLINKER_DEBUG=0
+mm_la_CPPFLAGS += \
+	-DTRACE_DEBUG=1
 endif

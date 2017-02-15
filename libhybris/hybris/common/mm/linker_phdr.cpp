@@ -41,11 +41,11 @@
 #include "hybris_compat.h"
 
 static int GetTargetElfMachine() {
-#if defined(ANDROID_ARM_LINKER)
+#if defined(__arm__)
   return EM_ARM;
 #elif defined(__aarch64__)
   return EM_AARCH64;
-#elif defined(ANDROID_X86_LINKER)
+#elif defined(__i386__)
   return EM_386;
 #elif defined(__mips__)
   return EM_MIPS;
@@ -704,7 +704,7 @@ int phdr_table_map_gnu_relro(const ElfW(Phdr)* phdr_table,
 }
 
 
-#if defined(ANDROID_ARM_LINKER)
+#if defined(__arm__)
 
 #  ifndef PT_ARM_EXIDX
 #    define PT_ARM_EXIDX    0x70000001      /* .ARM.exidx segment */
