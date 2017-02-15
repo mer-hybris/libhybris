@@ -36,11 +36,6 @@
 extern "C" size_t strlcpy(char *dest, const char *src, size_t size);
 extern "C" size_t strlcat(char *dst, const char *src, size_t size);
 
-typedef long unsigned int *_Unwind_Ptr;
-_Unwind_Ptr android_dl_unwind_find_exidx(_Unwind_Ptr pc, int* pcount);
-
-#define __BIONIC_DLERROR_BUFFER_SIZE 512
-
 #define ELF_ST_BIND(x)          ((x) >> 4)
 
 #ifndef PAGE_SIZE
@@ -60,9 +55,4 @@ _Unwind_Ptr android_dl_unwind_find_exidx(_Unwind_Ptr pc, int* pcount);
 #define DT_ANDROID_RELA (DT_LOOS + 4)
 #define DT_ANDROID_RELASZ (DT_LOOS + 5)
 
-#define R_AARCH64_TLS_DTPREL   1029	/* Module-relative offset, 64 bit.  */
-#define R_AARCH64_TLS_TPREL    1030	/* TP-relative offset, 64 bit.  */
-#define R_AARCH64_TLS_DTPREL32          1031
-
 #endif
-

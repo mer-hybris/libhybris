@@ -18,7 +18,6 @@
 #ifndef HOOKS_SHM_H_
 #define HOOKS_SHM_H_
 
-#define _GNU_SOURCE
 #include <stddef.h>
 #include <stdint.h>
 

@@ -37,7 +37,6 @@
 #include <string.h>
 #include <sys/mman.h>
 #include <sys/param.h>
-#include <sys/prctl.h>
 #include <unistd.h>
 
 #include <new>
@@ -45,9 +44,7 @@
 #include <vector>
 
 // Private C library headers.
-#if 0 // ANDROID
 #include "private/bionic_tls.h"
-#endif
 #include "private/KernelArgumentBlock.h"
 #include "private/ScopedPthreadMutexLocker.h"
 #include "private/ScopeGuard.h"
@@ -60,19 +57,12 @@
 #include "linker_phdr.h"
 #include "linker_relocs.h"
 #include "linker_reloc_iterators.h"
-#if 0 // ANDROID
-#include "ziparchive/zip_archive.h"
-#else
 
 #include "hybris_compat.h"
 
-extern "C" void *get_hooked_symbol(const char *symbol);
-
-int g_ld_debug_stdout = 0;
-
-#endif
-
+#ifdef DISABLED_FOR_HYBRIS_SUPPORT
 extern void __libc_init_AT_SECURE(KernelArgumentBlock&);
+#endif
 
 // Override macros to use C++ style casts.
 #undef ELF_ST_TYPE
@@ -106,7 +96,7 @@ static std::vector<std::string> g_ld_preload_names;
 
 static std::vector<soinfo*> g_ld_preloads;
 
-int g_ld_debug_verbosity;
+int g_ld_debug_verbosity = 0;
 
 abort_msg_t* g_abort_message = nullptr; // For debuggerd.
 
@@ -145,10 +135,12 @@ extern "C"
 void __attribute__((noinline)) __attribute__((visibility("default"))) rtld_db_dlactivity();
 
 static pthread_mutex_t g__r_debug_mutex = PTHREAD_MUTEX_INITIALIZER;
-//static r_debug _r_debug =
-//    {1, nullptr, reinterpret_cast<uintptr_t>(&rtld_db_dlactivity), r_debug::RT_CONSISTENT, 0};
+static r_debug _r_debug =
+    {1, nullptr, reinterpret_cast<uintptr_t>(&rtld_db_dlactivity), r_debug::RT_CONSISTENT, 0};
 
 static link_map* r_debug_tail = 0;
+
+static void* (*_get_hooked_symbol)(const char *sym, const char *requester);
 
 static void insert_soinfo_into_debug_map(soinfo* info) {
   // Copy the necessary fields into the debug structure.
@@ -330,13 +322,6 @@ static void parse_LD_PRELOAD(const char* path) {
 static bool realpath_fd(int fd, std::string* realpath) {
   std::vector<char> buf(PATH_MAX), proc_self_fd(PATH_MAX);
   snprintf(&proc_self_fd[0], proc_self_fd.size(), "/proc/self/fd/%d", fd);
-  // set DUMPABLE to 1 to access /proc/self/fd
-  int dumpable = prctl(PR_GET_DUMPABLE, 0, 0, 0, 0);
-  prctl(PR_SET_DUMPABLE, 1, 0, 0, 0);
-  auto guard = make_scope_guard([&]() {
-    // restore dumpable
-    prctl(PR_SET_DUMPABLE, dumpable, 0, 0, 0);
-  });
   if (readlink(&proc_self_fd[0], &buf[0], buf.size()) == -1) {
     PRINT("readlink('%s') failed: %s [fd=%d]", &proc_self_fd[0], strerror(errno), fd);
     return false;
@@ -346,7 +331,7 @@ static bool realpath_fd(int fd, std::string* realpath) {
   return true;
 }
 
-#if defined(ANDROID_ARM_LINKER)
+#if defined(__arm__)
 
 // For a given PC, find the .so that it belongs to.
 // Returns the base address of the .ARM.exidx section
@@ -356,7 +341,7 @@ static bool realpath_fd(int fd, std::string* realpath) {
 // Intended to be called by libc's __gnu_Unwind_Find_exidx().
 //
 // This function is exposed via dlfcn.cpp and libdl.so.
-_Unwind_Ptr android_dl_unwind_find_exidx(_Unwind_Ptr pc, int* pcount) {
+_Unwind_Ptr dl_unwind_find_exidx(_Unwind_Ptr pc, int* pcount) {
   uintptr_t addr = reinterpret_cast<uintptr_t>(pc);
 
   for (soinfo* si = solist; si != 0; si = si->next) {
@@ -654,9 +639,6 @@ bool soinfo::elf_lookup(SymbolName& symbol_name,
 
 soinfo::soinfo(const char* realpath, const struct stat* file_stat,
                off64_t file_offset, int rtld_flags) {
-#if 0 // ANDROID
-  memset(this, 0, sizeof(*this));
-#endif
 
   if (realpath != nullptr) {
     realpath_ = realpath;
@@ -897,74 +879,13 @@ class LoadTask {
 
 LoadTask::deleter_t LoadTask::deleter;
 
-//template <typename T>
-//using linked_list_t = LinkedList<T, TypeBasedAllocator<LinkedListEntry<T>>>;
+template <typename T>
+using linked_list_t = LinkedList<T, TypeBasedAllocator<LinkedListEntry<T>>>;
 
-typedef LinkedList<soinfo, TypeBasedAllocator<LinkedListEntry<soinfo>>> SoinfoLinkedList;
-typedef LinkedList<const char, TypeBasedAllocator<LinkedListEntry<const char>>> StringLinkedList;
-typedef LinkedList<LoadTask, TypeBasedAllocator<LinkedListEntry<LoadTask>>> LoadTaskList;
+typedef linked_list_t<soinfo> SoinfoLinkedList;
+typedef linked_list_t<const char> StringLinkedList;
+typedef linked_list_t<LoadTask> LoadTaskList;
 
-static soinfo* find_library(const char* name, int rtld_flags, const android_dlextinfo* extinfo);
-
-// g_ld_all_shim_libs maintains the references to memory as it used
-// in the soinfo structures and in the g_active_shim_libs list.
-
-static std::vector<std::string> g_ld_all_shim_libs;
-
-// g_active_shim_libs are all shim libs that are still eligible
-// to be loaded.  We must remove a shim lib from the list before
-// we load the library to avoid recursive loops (load shim libA
-// for libB where libA also links against libB).
-
-static LinkedList<const std::string, TypeBasedAllocator<LinkedListEntry<const std::string>>> g_active_shim_libs;
-
-static void reset_g_active_shim_libs(void) {
-  g_active_shim_libs.clear();
-  for (const auto& pair : g_ld_all_shim_libs) {
-    g_active_shim_libs.push_back(&pair);
-  }
-}
-
-static void parse_LD_SHIM_LIBS(const char* path) {
-  parse_path(path, " :", &g_ld_all_shim_libs);
-  reset_g_active_shim_libs();
-}
-
-static bool shim_lib_matches(const char *shim_lib, const char *realpath) {
-  const char *sep = strchr(shim_lib, '|');
-  return sep != nullptr && strncmp(realpath, shim_lib, sep - shim_lib) == 0;
-}
-
-template<typename F>
-static void shim_libs_for_each(const char *const path, F action) {
-  if (path == nullptr) return;
-  INFO("Finding shim libs for \"%s\"\n", path);
-  std::vector<const std::string *> matched;
-
-  g_active_shim_libs.for_each([&](const std::string *a_pair) {
-    const char *pair = a_pair->c_str();
-    if (shim_lib_matches(pair, path)) {
-      matched.push_back(a_pair);
-    }
-  });
-
-  g_active_shim_libs.remove_if([&](const std::string *a_pair) {
-    const char *pair = a_pair->c_str();
-    return shim_lib_matches(pair, path);
-  });
-
-  for (const auto& one_pair : matched) {
-    const char* const pair = one_pair->c_str();
-    const char* sep = strchr(pair, '|');
-    soinfo *child = find_library(sep+1, RTLD_GLOBAL, nullptr);
-    if (child) {
-      INFO("Using shim lib \"%s\"\n", sep+1);
-      action(child);
-    } else {
-      PRINT("Shim lib \"%s\" can not be loaded, ignoring.", sep+1);
-    }
-  }
-}
 
 // This function walks down the tree of soinfo dependencies
 // in breadth-first order and
@@ -974,7 +895,7 @@ static void shim_libs_for_each(const char *const path, F action) {
 // walk_dependencies_tree returns false if walk was terminated
 // by the action and true otherwise.
 template<typename F>
-static bool walk_dependencies_tree(soinfo* root_soinfos[], size_t root_soinfos_size, bool do_shims, F action) {
+static bool walk_dependencies_tree(soinfo* root_soinfos[], size_t root_soinfos_size, F action) {
   SoinfoLinkedList visit_list;
   SoinfoLinkedList visited;
 
@@ -997,13 +918,6 @@ static bool walk_dependencies_tree(soinfo* root_soinfos[], size_t root_soinfos_s
     si->get_children().for_each([&](soinfo* child) {
       visit_list.push_back(child);
     });
-
-    if (do_shims) {
-      shim_libs_for_each(si->get_realpath(), [&](soinfo* child) {
-        si->add_child(child);
-        visit_list.push_back(child);
-      });
-    }
   }
 
   return true;
@@ -1015,7 +929,7 @@ static const ElfW(Sym)* dlsym_handle_lookup(soinfo* root, soinfo* skip_until,
   const ElfW(Sym)* result = nullptr;
   bool skip_lookup = skip_until != nullptr;
 
-  walk_dependencies_tree(&root, 1, false, [&](soinfo* current_soinfo) {
+  walk_dependencies_tree(&root, 1, [&](soinfo* current_soinfo) {
     if (skip_lookup) {
       skip_lookup = current_soinfo != skip_until;
       return true;
@@ -1168,67 +1082,8 @@ ElfW(Sym)* soinfo::elf_addr_lookup(const void* addr) {
   return nullptr;
 }
 
-#if 0 // ANDROID
-static int open_library_in_zipfile(const char* const path,
-                                   off64_t* file_offset) {
-  TRACE("Trying zip file open from path '%s'", path);
-
-  // Treat an '!/' separator inside a path as the separator between the name
-  // of the zip file on disk and the subdirectory to search within it.
-  // For example, if path is "foo.zip!/bar/bas/x.so", then we search for
-  // "bar/bas/x.so" within "foo.zip".
-  const char* separator = strstr(path, "!/");
-  if (separator == nullptr) {
-    return -1;
-  }
-
-  char buf[512];
-  if (strlcpy(buf, path, sizeof(buf)) >= sizeof(buf)) {
-    PRINT("Warning: ignoring very long library path: %s", path);
-    return -1;
-  }
-
-  buf[separator - path] = '\0';
-
-  const char* zip_path = buf;
-  const char* file_path = &buf[separator - path + 2];
-  int fd = TEMP_FAILURE_RETRY(open(zip_path, O_RDONLY | O_CLOEXEC));
-  if (fd == -1) {
-    return -1;
-  }
-
-  ZipArchiveHandle handle;
-  if (OpenArchiveFd(fd, "", &handle, false) != 0) {
-    // invalid zip-file (?)
-    close(fd);
-    return -1;
-  }
-
-  auto archive_guard = make_scope_guard([&]() {
-    CloseArchive(handle);
-  });
-
-  ZipEntry entry;
-
-  if (FindEntry(handle, ZipEntryName(file_path), &entry) != 0) {
-    // Entry was not found.
-    close(fd);
-    return -1;
-  }
-
-  // Check if it is properly stored
-  if (entry.method != kCompressStored || (entry.offset % PAGE_SIZE) != 0) {
-    close(fd);
-    return -1;
-  }
-
-  *file_offset = entry.offset;
-  return fd;
-}
-#endif
-
 static bool format_path(char* buf, size_t buf_size, const char* path, const char* name) {
-  int n = __libc_format_buffer(buf, buf_size, "%s/%s", path, name);
+  int n = snprintf(buf, buf_size, "%s/%s", path, name);
   if (n < 0 || n >= static_cast<int>(buf_size)) {
     PRINT("Warning: ignoring very long library path: %s/%s", path, name);
     return false;
@@ -1255,15 +1110,6 @@ static int open_library_on_default_path(const char* name, off64_t* file_offset) 
 }
 
 static int open_library_on_ld_library_path(const char* name, off64_t* file_offset) {
-#ifdef DEFAULT_HYBRIS_LD_LIBRARY_PATH
-  if (getenv("HYBRIS_LD_LIBRARY_PATH") == NULL && g_ld_library_paths.size() == 0) {
-    parse_path(DEFAULT_HYBRIS_LD_LIBRARY_PATH, ":", &g_ld_library_paths);
-  }
-#endif
-  if (getenv("HYBRIS_LD_LIBRARY_PATH") != NULL && g_ld_library_paths.size() == 0) {
-    parse_path(getenv("HYBRIS_LD_LIBRARY_PATH"), ":", &g_ld_library_paths);
-  }
-
   for (const auto& path_str : g_ld_library_paths) {
     char buf[512];
     const char* const path = path_str.c_str();
@@ -1272,12 +1118,6 @@ static int open_library_on_ld_library_path(const char* name, off64_t* file_offse
     }
 
     int fd = -1;
-#if 0 // ANDROID
-    if (strchr(buf, '!') != nullptr) {
-      fd = open_library_in_zipfile(buf, file_offset);
-    }
-#endif
-
     if (fd == -1) {
       fd = TEMP_FAILURE_RETRY(open(buf, O_RDONLY | O_CLOEXEC));
       if (fd != -1) {
@@ -1298,15 +1138,6 @@ static int open_library(const char* name, off64_t* file_offset) {
 
   // If the name contains a slash, we should attempt to open it directly and not search the paths.
   if (strchr(name, '/') != nullptr) {
-#if 0 // ANDROID
-    if (strchr(name, '!') != nullptr) {
-      int fd = open_library_in_zipfile(name, file_offset);
-      if (fd != -1) {
-        return fd;
-      }
-    }
-#endif
-
     int fd = TEMP_FAILURE_RETRY(open(name, O_RDONLY | O_CLOEXEC));
     if (fd != -1) {
       *file_offset = 0;
@@ -1323,6 +1154,7 @@ static int open_library(const char* name, off64_t* file_offset) {
 }
 
 static const char* fix_dt_needed(const char* dt_needed, const char* sopath) {
+  (void) sopath;
 #if !defined(__LP64__)
   // Work around incorrect DT_NEEDED entries for old apps: http://b/21364029
   if (get_application_target_sdk_version() <= 22) {
@@ -1487,18 +1319,6 @@ static bool find_loaded_library_by_soname(const char* name, soinfo** candidate) 
 
 static soinfo* find_library_internal(LoadTaskList& load_tasks, const char* name,
                                      int rtld_flags, const android_dlextinfo* extinfo) {
-#if LINKER_DEBUG
-    /* Has to be set via init_library as we don't get called via the
-     * traditional android init library path  */
-    const char* env;
-    env = getenv("HYBRIS_LINKER_DEBUG");
-    if (env)
-        g_ld_debug_verbosity = atoi(env);
-    if (getenv("HYBRIS_LINKER_STDOUT"))
-        g_ld_debug_stdout = 1;
-
-    INFO("[ HYBRIS: linker debug initialized, continuing find_library_internal '%s']\n", name);
-#endif
   soinfo* candidate;
 
   if (find_loaded_library_by_soname(name, &candidate)) {
@@ -1585,13 +1405,12 @@ static bool find_libraries(soinfo* start_with, const char* const library_names[]
   // Step 1: load and pre-link all DT_NEEDED libraries in breadth first order.
   for (LoadTask::unique_ptr task(load_tasks.pop_front());
       task.get() != nullptr; task.reset(load_tasks.pop_front())) {
-    soinfo* needed_by = task->get_needed_by();
-
-    soinfo* si = find_library_internal(load_tasks, task->get_name(),
-                                       rtld_flags, needed_by == nullptr ? extinfo : nullptr);
+    soinfo* si = find_library_internal(load_tasks, task->get_name(), rtld_flags, extinfo);
     if (si == nullptr) {
       return false;
     }
+
+    soinfo* needed_by = task->get_needed_by();
 
     if (needed_by != nullptr) {
       needed_by->add_child(si);
@@ -1622,7 +1441,6 @@ static bool find_libraries(soinfo* start_with, const char* const library_names[]
   walk_dependencies_tree(
       start_with == nullptr ? soinfos : &start_with,
       start_with == nullptr ? soinfos_count : 1,
-      true,
       [&] (soinfo* si) {
     local_group.push_back(si);
     return true;
@@ -1802,7 +1620,6 @@ soinfo* do_dlopen(const char* name, int flags, const android_dlextinfo* extinfo)
   }
 
   ProtectedDataGuard guard;
-  reset_g_active_shim_libs();
   soinfo* si = find_library(name, flags, extinfo);
   if (si != nullptr) {
     si->call_constructors();
@@ -1935,7 +1752,7 @@ bool soinfo::lookup_version_info(const VersionTracker& version_tracker, ElfW(Wor
 
 #if !defined(__mips__)
 #if defined(USE_RELA)
-static ElfW(Addr) get_addend(ElfW(Rela)* rela, ElfW(Addr) reloc_addr) {
+static ElfW(Addr) get_addend(ElfW(Rela)* rela, ElfW(Addr) reloc_addr ) {
   return rela->r_addend;
 }
 #else
@@ -1977,10 +1794,8 @@ bool soinfo::relocate(const VersionTracker& version_tracker, ElfRelIteratorT&& r
       sym_name = get_string(symtab_[sym].st_name);
       const version_info* vi = nullptr;
 
-      INFO("HYBRIS: '%s' checking hooks for sym '%s'\n", get_soname(), sym_name);
-      sym_addr = reinterpret_cast<ElfW(Addr)>(get_hooked_symbol(sym_name));
-      if (sym_addr == 0)
-      {
+      sym_addr = reinterpret_cast<ElfW(Addr)>(_get_hooked_symbol(sym_name, get_realpath()));
+      if (!sym_addr) {
         if (!lookup_version_info(version_tracker, sym, sym_name, &vi)) {
           return false;
         }
@@ -2022,9 +1837,9 @@ bool soinfo::relocate(const VersionTracker& version_tracker, ElfRelIteratorT&& r
 #elif defined(__x86_64__)
           case R_X86_64_32:
           case R_X86_64_64:
-#elif defined(ANDROID_ARM_LINKER)
+#elif defined(__arm__)
           case R_ARM_ABS32:
-#elif defined(ANDROID_X86_LINKER)
+#elif defined(__i386__)
           case R_386_32:
 #endif
             /*
@@ -2037,7 +1852,7 @@ bool soinfo::relocate(const VersionTracker& version_tracker, ElfRelIteratorT&& r
           case R_X86_64_PC32:
             sym_addr = reloc;
             break;
-#elif defined(ANDROID_X86_LINKER)
+#elif defined(__i386__)
           case R_386_PC32:
             sym_addr = reloc;
             break;
@@ -2140,14 +1955,14 @@ bool soinfo::relocate(const VersionTracker& version_tracker, ElfRelIteratorT&& r
       case R_AARCH64_ABS64:
         count_relocation(kRelocAbsolute);
         MARK(rel->r_offset);
-        TRACE_TYPE(RELO, "RELO ABS64 %16llx <- %16llx %s\n",
+        TRACE_TYPE(RELO, "RELO ABS64 %16" PRIx64 " <- %16" PRIx64 " %s\n",
                    reloc, (sym_addr + addend), sym_name);
         *reinterpret_cast<ElfW(Addr)*>(reloc) += (sym_addr + addend);
         break;
       case R_AARCH64_ABS32:
         count_relocation(kRelocAbsolute);
         MARK(rel->r_offset);
-        TRACE_TYPE(RELO, "RELO ABS32 %16llx <- %16llx %s\n",
+        TRACE_TYPE(RELO, "RELO ABS32 %16" PRIx64 " <- %16" PRIx64 " %s\n",
                    reloc, (sym_addr + addend), sym_name);
         {
           const ElfW(Addr) reloc_value = *reinterpret_cast<ElfW(Addr)*>(reloc);
@@ -2157,7 +1972,7 @@ bool soinfo::relocate(const VersionTracker& version_tracker, ElfRelIteratorT&& r
               ((reloc_value + (sym_addr + addend)) <= max_value)) {
             *reinterpret_cast<ElfW(Addr)*>(reloc) += (sym_addr + addend);
           } else {
-            DL_ERR("0x%016llx out of range 0x%016llx to 0x%016llx",
+            DL_ERR("0x%016" PRIx64 " out of range 0x%016" PRIx64 " to 0x%016" PRIx64,
                    (reloc_value + (sym_addr + addend)), min_value, max_value);
             return false;
           }
@@ -2166,7 +1981,7 @@ bool soinfo::relocate(const VersionTracker& version_tracker, ElfRelIteratorT&& r
       case R_AARCH64_ABS16:
         count_relocation(kRelocAbsolute);
         MARK(rel->r_offset);
-        TRACE_TYPE(RELO, "RELO ABS16 %16llx <- %16llx %s\n",
+        TRACE_TYPE(RELO, "RELO ABS16 %16" PRIx64 " <- %16" PRIx64 " %s\n",
                    reloc, (sym_addr + addend), sym_name);
         {
           const ElfW(Addr) reloc_value = *reinterpret_cast<ElfW(Addr)*>(reloc);
@@ -2176,7 +1991,7 @@ bool soinfo::relocate(const VersionTracker& version_tracker, ElfRelIteratorT&& r
               ((reloc_value + (sym_addr + addend)) <= max_value)) {
             *reinterpret_cast<ElfW(Addr)*>(reloc) += (sym_addr + addend);
           } else {
-            DL_ERR("0x%016llx out of range 0x%016llx to 0x%016llx",
+            DL_ERR("0x%016" PRIx64 " out of range 0x%016" PRIx64 " to 0x%016" PRIx64,
                    reloc_value + (sym_addr + addend), min_value, max_value);
             return false;
           }
@@ -2185,14 +2000,14 @@ bool soinfo::relocate(const VersionTracker& version_tracker, ElfRelIteratorT&& r
       case R_AARCH64_PREL64:
         count_relocation(kRelocRelative);
         MARK(rel->r_offset);
-        TRACE_TYPE(RELO, "RELO REL64 %16llx <- %16llx - %16llx %s\n",
+        TRACE_TYPE(RELO, "RELO REL64 %16" PRIx64 " <- %16" PRIx64 " - %16" PRIx64 " %s\n",
                    reloc, (sym_addr + addend), rel->r_offset, sym_name);
         *reinterpret_cast<ElfW(Addr)*>(reloc) += (sym_addr + addend) - rel->r_offset;
         break;
       case R_AARCH64_PREL32:
         count_relocation(kRelocRelative);
         MARK(rel->r_offset);
-        TRACE_TYPE(RELO, "RELO REL32 %16llx <- %16llx - %16llx %s\n",
+        TRACE_TYPE(RELO, "RELO REL32 %16" PRIx64 " <- %16" PRIx64 " - %16" PRIx64 " %s\n",
                    reloc, (sym_addr + addend), rel->r_offset, sym_name);
         {
           const ElfW(Addr) reloc_value = *reinterpret_cast<ElfW(Addr)*>(reloc);
@@ -2202,7 +2017,7 @@ bool soinfo::relocate(const VersionTracker& version_tracker, ElfRelIteratorT&& r
               ((reloc_value + ((sym_addr + addend) - rel->r_offset)) <= max_value)) {
             *reinterpret_cast<ElfW(Addr)*>(reloc) += ((sym_addr + addend) - rel->r_offset);
           } else {
-            DL_ERR("0x%016llx out of range 0x%016llx to 0x%016llx",
+            DL_ERR("0x%016" PRIx64 " out of range 0x%016" PRIx64 " to 0x%016" PRIx64,
                    reloc_value + ((sym_addr + addend) - rel->r_offset), min_value, max_value);
             return false;
           }
@@ -2211,7 +2026,7 @@ bool soinfo::relocate(const VersionTracker& version_tracker, ElfRelIteratorT&& r
       case R_AARCH64_PREL16:
         count_relocation(kRelocRelative);
         MARK(rel->r_offset);
-        TRACE_TYPE(RELO, "RELO REL16 %16llx <- %16llx - %16llx %s\n",
+        TRACE_TYPE(RELO, "RELO REL16 %16" PRIx64 " <- %16" PRIx64 " - %16" PRIx64 " %s\n",
                    reloc, (sym_addr + addend), rel->r_offset, sym_name);
         {
           const ElfW(Addr) reloc_value = *reinterpret_cast<ElfW(Addr)*>(reloc);
@@ -2221,7 +2036,7 @@ bool soinfo::relocate(const VersionTracker& version_tracker, ElfRelIteratorT&& r
               ((reloc_value + ((sym_addr + addend) - rel->r_offset)) <= max_value)) {
             *reinterpret_cast<ElfW(Addr)*>(reloc) += ((sym_addr + addend) - rel->r_offset);
           } else {
-            DL_ERR("0x%016llx out of range 0x%016llx to 0x%016llx",
+            DL_ERR("0x%016" PRIx64 " out of range 0x%016" PRIx64 " to 0x%016" PRIx64,
                    reloc_value + ((sym_addr + addend) - rel->r_offset), min_value, max_value);
             return false;
           }
@@ -2240,12 +2055,12 @@ bool soinfo::relocate(const VersionTracker& version_tracker, ElfRelIteratorT&& r
          */
         DL_ERR("%s R_AARCH64_COPY relocations are not supported", get_realpath());
         return false;
-      case R_AARCH64_TLS_TPREL64:
-        TRACE_TYPE(RELO, "RELO TLS_TPREL64 *** %16llx <- %16llx - %16llx\n",
+      case R_AARCH64_TLS_TPREL:
+        TRACE_TYPE(RELO, "RELO TLS_TPREL *** %16" PRIx64 " <- %16" PRIx64 " - %16" PRIx64 "\n",
                    reloc, (sym_addr + addend), rel->r_offset);
         break;
-      case R_AARCH64_TLS_DTPREL32:
-        TRACE_TYPE(RELO, "RELO TLS_DTPREL32 *** %16llx <- %16llx - %16llx\n",
+      case R_AARCH64_TLS_DTPREL:
+        TRACE_TYPE(RELO, "RELO TLS_DTPREL *** %16" PRIx64 " <- %16" PRIx64 " - %16" PRIx64 "\n",
                    reloc, (sym_addr + addend), rel->r_offset);
         break;
 #elif defined(__x86_64__)
@@ -2271,7 +2086,7 @@ bool soinfo::relocate(const VersionTracker& version_tracker, ElfRelIteratorT&& r
                    static_cast<size_t>(sym_addr), static_cast<size_t>(reloc), sym_name);
         *reinterpret_cast<ElfW(Addr)*>(reloc) = sym_addr + addend - reloc;
         break;
-#elif defined(ANDROID_ARM_LINKER)
+#elif defined(__arm__)
       case R_ARM_ABS32:
         count_relocation(kRelocAbsolute);
         MARK(rel->r_offset);
@@ -2297,7 +2112,7 @@ bool soinfo::relocate(const VersionTracker& version_tracker, ElfRelIteratorT&& r
          */
         DL_ERR("%s R_ARM_COPY relocations are not supported", get_realpath());
         return false;
-#elif defined(ANDROID_X86_LINKER)
+#elif defined(__i386__)
       case R_386_32:
         count_relocation(kRelocRelative);
         MARK(rel->r_offset);
@@ -2321,7 +2136,7 @@ bool soinfo::relocate(const VersionTracker& version_tracker, ElfRelIteratorT&& r
 }
 #endif  // !defined(__mips__)
 
-void soinfo::call_array(const char* array_name, linker_function_t* functions,
+void soinfo::call_array(const char* array_name , linker_function_t* functions,
                         size_t count, bool reverse) {
   if (functions == nullptr) {
     return;
@@ -2341,7 +2156,7 @@ void soinfo::call_array(const char* array_name, linker_function_t* functions,
   TRACE("[ Done calling %s for '%s' ]", array_name, get_realpath());
 }
 
-void soinfo::call_function(const char* function_name, linker_function_t function) {
+void soinfo::call_function(const char* function_name , linker_function_t function) {
   if (function == nullptr || reinterpret_cast<uintptr_t>(function) == static_cast<uintptr_t>(-1)) {
     return;
   }
@@ -2640,7 +2455,7 @@ bool soinfo::prelink_image() {
     }
   }
 
-#if defined(ANDROID_ARM_LINKER)
+#if defined(__arm__)
   (void) phdr_table_get_arm_exidx(phdr, phnum, load_bias,
                                   &ARM_exidx, &ARM_exidx_count);
 #endif
@@ -3066,7 +2881,6 @@ bool soinfo::link_image(const soinfo_list_t& global_group, const soinfo_list_t& 
     // TODO (dimitry): remove != __ANDROID_API__ check once http://b/20020312 is fixed
     if (get_application_target_sdk_version() != __ANDROID_API__
         && get_application_target_sdk_version() > 22) {
-      PRINT("%s: has text relocations", get_realpath());
       DL_ERR("%s: has text relocations", get_realpath());
       return false;
     }
@@ -3267,13 +3081,17 @@ static ElfW(Addr) __linker_init_post_relocation(KernelArgumentBlock& args, ElfW(
   gettimeofday(&t0, 0);
 #endif
 
+#ifdef DISABLED_FOR_HYBRIS_SUPPORT
   // Sanitize the environment.
   __libc_init_AT_SECURE(args);
 
   // Initialize system properties
   __system_properties_init(); // may use 'environ'
+#endif
 
+#ifdef DISABLED_FOR_HYBRIS_SUPPORT
   debuggerd_init();
+#endif
 
   // Get a few environment variables.
   const char* LD_DEBUG = getenv("HYBRIS_LD_DEBUG");
@@ -3285,11 +3103,9 @@ static ElfW(Addr) __linker_init_post_relocation(KernelArgumentBlock& args, ElfW(
   // doesn't cost us anything.
   const char* ldpath_env = nullptr;
   const char* ldpreload_env = nullptr;
-  const char* ldshim_libs_env = nullptr;
   if (!getauxval(AT_SECURE)) {
     ldpath_env = getenv("HYBRIS_LD_LIBRARY_PATH");
     ldpreload_env = getenv("HYBRIS_LD_PRELOAD");
-    ldshim_libs_env = getenv("HYBRIS_LD_SHIM_LIBS");
   }
 
   INFO("[ android linker & debugger ]");
@@ -3336,19 +3152,21 @@ static ElfW(Addr) __linker_init_post_relocation(KernelArgumentBlock& args, ElfW(
 
   ElfW(Ehdr)* elf_hdr = reinterpret_cast<ElfW(Ehdr)*>(si->base);
   if (elf_hdr->e_type != ET_DYN) {
-    __libc_format_fd(2, "error: only position independent executables (PIE) are supported.\n");
+    fprintf(stderr, "error: only position independent executables (PIE) are supported.\n");
     exit(EXIT_FAILURE);
   }
 
   // Use LD_LIBRARY_PATH and LD_PRELOAD (but only if we aren't setuid/setgid).
-  parse_LD_LIBRARY_PATH(ldpath_env);
+  if (DEFAULT_HYBRIS_LD_LIBRARY_PATH)
+    parse_LD_LIBRARY_PATH(DEFAULT_HYBRIS_LD_LIBRARY_PATH);
+  else
+    parse_LD_LIBRARY_PATH(ldpath_env);
   parse_LD_PRELOAD(ldpreload_env);
-  parse_LD_SHIM_LIBS(ldshim_libs_env);
 
   somain = si;
 
   if (!si->prelink_image()) {
-    __libc_format_fd(2, "CANNOT LINK EXECUTABLE: %s\n", linker_get_error_buffer());
+    fprintf(stderr, "CANNOT LINK EXECUTABLE: %s\n", linker_get_error_buffer());
     exit(EXIT_FAILURE);
   }
 
@@ -3379,11 +3197,11 @@ static ElfW(Addr) __linker_init_post_relocation(KernelArgumentBlock& args, ElfW(
   if (needed_libraries_count > 0 &&
       !find_libraries(si, needed_library_names, needed_libraries_count, nullptr,
           &g_ld_preloads, ld_preloads_count, RTLD_GLOBAL, nullptr)) {
-    __libc_format_fd(2, "CANNOT LINK EXECUTABLE: %s\n", linker_get_error_buffer());
+    fprintf(stderr, "CANNOT LINK EXECUTABLE: %s\n", linker_get_error_buffer());
     exit(EXIT_FAILURE);
   } else if (needed_libraries_count == 0) {
     if (!si->link_image(g_empty_list, soinfo::soinfo_list_t::make_list(si), nullptr)) {
-      __libc_format_fd(2, "CANNOT LINK EXECUTABLE: %s\n", linker_get_error_buffer());
+      fprintf(stderr, "CANNOT LINK EXECUTABLE: %s\n", linker_get_error_buffer());
       exit(EXIT_FAILURE);
     }
     si->increment_ref_count();
@@ -3474,7 +3292,33 @@ static ElfW(Addr) get_elf_exec_load_bias(const ElfW(Ehdr)* elf) {
   return 0;
 }
 
-#if 0 // ANDROID
+extern "C" void android_linker_init(int sdk_version, void* (*get_hooked_symbol)(const char*, const char*)) {
+  // Get a few environment variables.
+  const char* LD_DEBUG = getenv("HYBRIS_LD_DEBUG");
+  if (LD_DEBUG != nullptr) {
+    g_ld_debug_verbosity = atoi(LD_DEBUG);
+  }
+
+  const char* ldpath_env = nullptr;
+  const char* ldpreload_env = nullptr;
+  if (!getauxval(AT_SECURE)) {
+    ldpath_env = getenv("HYBRIS_LD_LIBRARY_PATH");
+    ldpreload_env = getenv("HYBRIS_LD_PRELOAD");
+  }
+
+  if (DEFAULT_HYBRIS_LD_LIBRARY_PATH)
+    parse_LD_LIBRARY_PATH(DEFAULT_HYBRIS_LD_LIBRARY_PATH);
+  else
+    parse_LD_LIBRARY_PATH(ldpath_env);
+  parse_LD_PRELOAD(ldpreload_env);
+
+  if (sdk_version > 0)
+    set_application_target_sdk_version(sdk_version);
+
+  _get_hooked_symbol = get_hooked_symbol;
+}
+
+#ifdef DISABLED_FOR_HYBRIS_SUPPORT
 extern "C" void _start();
 
 /*
@@ -3526,13 +3370,16 @@ extern "C" ElfW(Addr) __linker_init(void* raw_args) {
     // call write() (because it involves a GOT reference). We may as
     // well try though...
     const char* msg = "CANNOT LINK EXECUTABLE: ";
-    write(2, msg, strlen(msg));
-    write(2, __linker_dl_err_buf, strlen(__linker_dl_err_buf));
-    write(2, "\n", 1);
+    int unused __attribute__((unused));
+    unused = write(2, msg, strlen(msg));
+    unused = write(2, __linker_dl_err_buf, strlen(__linker_dl_err_buf));
+    unused = write(2, "\n", 1);
     _exit(EXIT_FAILURE);
   }
 
+#ifdef DISABLED_FOR_HYBRIS_SUPPORT
   __libc_init_tls(args);
+#endif
 
   // Initialize the linker's own global variables
   linker_so.call_constructors();
@@ -3553,4 +3400,5 @@ extern "C" ElfW(Addr) __linker_init(void* raw_args) {
   // Return the address that the calling assembly stub should jump to.
   return start_address;
 }
+
 #endif

@@ -44,17 +44,16 @@
 
 #define DL_ERR(fmt, x...) \
     do { \
-      __libc_format_buffer(linker_get_error_buffer(), linker_get_error_buffer_size(), fmt, ##x); \
+      fprintf(stderr, fmt, ##x); \
+      fprintf(stderr, "\n"); \
       /* If LD_DEBUG is set high enough, log every dlerror(3) message. */ \
       DEBUG("%s\n", linker_get_error_buffer()); \
     } while (false)
 
 #define DL_WARN(fmt, x...) \
     do { \
-      __libc_format_log(ANDROID_LOG_WARN, "linker", fmt, ##x); \
-      __libc_format_fd(2, "WARNING: linker: "); \
-      __libc_format_fd(2, fmt, ##x); \
-      __libc_format_fd(2, "\n"); \
+      fprintf(stderr, "WARNING: linker " fmt, ##x); \
+      fprintf(stderr, "\n"); \
     } while (false)
 
 #if defined(__LP64__)
@@ -237,7 +236,7 @@ struct soinfo {
   linker_function_t init_func_;
   linker_function_t fini_func_;
 
-#if defined(ANDROID_ARM_LINKER)
+#if defined(__arm__)
  public:
   // ARM EABI section used for stack unwinding.
   uint32_t* ARM_exidx;
@@ -306,9 +305,9 @@ struct soinfo {
 
   bool inline has_min_version(uint32_t min_version) const {
 #if defined(__work_around_b_19059885__)
+    (void) min_version;
     return (flags_ & FLAG_NEW_SOINFO) != 0 && version_ >= min_version;
 #else
-    (void)min_version;
     return true;
 #endif
   }

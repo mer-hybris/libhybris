@@ -24,6 +24,8 @@
 #include <sys/mman.h>
 #include <unistd.h>
 
+#include <memory.h>
+
 #include "private/bionic_prctl.h"
 
 #include "hybris_compat.h"
@@ -291,7 +293,7 @@ void* LinkerMemoryAllocator::realloc(void* ptr, size_t size) {
   }
 
   if (size == 0) {
-    this->free(ptr);
+    free(ptr);
     return nullptr;
   }
 
@@ -313,7 +315,7 @@ void* LinkerMemoryAllocator::realloc(void* ptr, size_t size) {
   if (old_size < size) {
     void *result = alloc(size);
     memcpy(result, ptr, old_size);
-    this->free(ptr);
+    free(ptr);
     return result;
   }
 
