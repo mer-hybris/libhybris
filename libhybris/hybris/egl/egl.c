@@ -328,7 +328,21 @@ HYBRIS_IMPLEMENT_FUNCTION4(egl, EGLBoolean, eglMakeCurrent, EGLDisplay, EGLSurfa
 HYBRIS_IMPLEMENT_FUNCTION0(egl, EGLContext, eglGetCurrentContext);
 HYBRIS_IMPLEMENT_FUNCTION1(egl, EGLSurface, eglGetCurrentSurface, EGLint);
 HYBRIS_IMPLEMENT_FUNCTION0(egl, EGLDisplay, eglGetCurrentDisplay);
-HYBRIS_IMPLEMENT_FUNCTION4(egl, EGLBoolean, eglQueryContext, EGLDisplay, EGLContext, EGLint, EGLint *);
+
+EGLBoolean eglQueryContext(EGLDisplay dpy, EGLContext ctx, EGLint attribute, EGLint *value)
+{
+	HYBRIS_DLSYSM(egl, &_eglQueryContext, "eglQueryContext");
+
+    EGLBoolean b = _eglQueryContext(dpy, ctx, attribute, value);
+
+    if(attribute == EGL_CONTEXT_CLIENT_VERSION)
+    {
+        if(value) *value = _egl_context_client_version;
+    }
+
+    return b;
+}
+
 HYBRIS_IMPLEMENT_FUNCTION0(egl, EGLBoolean, eglWaitGL);
 HYBRIS_IMPLEMENT_FUNCTION1(egl, EGLBoolean, eglWaitNative, EGLint);
 
