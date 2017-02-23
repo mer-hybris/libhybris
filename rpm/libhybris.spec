@@ -269,6 +269,7 @@ autoreconf -v -f -i
   --with-android-headers=/usr/lib/droid-devel/droid-headers \
   --enable-experimental \
   --enable-mali-quirks \
+  --enable-initialize-bionic \
 %ifarch %{ix86}
   --enable-arch=x86 \
   --with-default-hybris-ld-library-path=/usr/libexec/droid-hybris/system/lib:/vendor/lib:/system/lib \
