@@ -2491,6 +2491,7 @@ static int _hybris_hook_my_printf(const char *tmp, ...)
 
 static struct _hook hooks_common[] = {
 #ifdef WANT_INITIALIZE_BIONIC
+    HOOK_TO(glibc_malloc, malloc),
     HOOK_INDIRECT(my_printf),
     HOOK_DIRECT(property_get),
     HOOK_DIRECT(property_set),
