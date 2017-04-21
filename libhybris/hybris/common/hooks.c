@@ -2592,13 +2592,6 @@ static struct _hook hooks_common[] = {
     HOOK_INDIRECT(dlsym),
     HOOK_INDIRECT(dladdr),
     HOOK_INDIRECT(dlclose),
-    HOOK_DIRECT_NO_DEBUG(malloc),
-    HOOK_DIRECT_NO_DEBUG(free),
-    HOOK_DIRECT_NO_DEBUG(calloc),
-    HOOK_DIRECT_NO_DEBUG(realloc),
-    HOOK_DIRECT_NO_DEBUG(valloc),
-    HOOK_DIRECT_NO_DEBUG(pvalloc),
-    HOOK_DIRECT_NO_DEBUG(malloc_usable_size),
 #else
     HOOK_DIRECT(property_get),
     HOOK_DIRECT(property_set),
