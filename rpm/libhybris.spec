@@ -269,6 +269,7 @@ autoreconf -v -f -i
   --with-android-headers=/usr/lib/droid-devel/droid-headers \
   --enable-experimental \
   --enable-mali-quirks \
+  --enable-adreno-quirks \
   --enable-initialize-bionic \
 %ifarch %{ix86}
   --enable-arch=x86 \
