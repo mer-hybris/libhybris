@@ -206,7 +206,8 @@ test_vibrator_CFLAGS = \
 	$(ANDROID_HEADERS_CFLAGS)
 test_vibrator_LDADD = \
 	$(top_builddir)/common/libhybris-common.la \
-	$(top_builddir)/vibrator/libvibrator.la
+	$(top_builddir)/vibrator/libvibrator.la \
+	$(top_builddir)/hardware/libhardware.la
 
 test_wifi_SOURCES = test_wifi.c
 test_wifi_CFLAGS = \
