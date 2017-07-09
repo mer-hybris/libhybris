@@ -11,6 +11,10 @@ if WANT_EXPERIMENTAL
 SUBDIRS += mm
 endif
 
+if HAS_ANDROID_7_0_0
+SUBDIRS += n
+endif
+
 libhybris_common_la_SOURCES = \
 	hooks.c \
 	hooks_shm.c \
@@ -40,6 +44,9 @@ libhybris_common_la_CPPFLAGS += -DWANT_LINKER_JB
 endif
 if WANT_EXPERIMENTAL
 libhybris_common_la_CPPFLAGS += -DWANT_LINKER_MM
+endif
+if HAS_ANDROID_7_0_0
+libhybris_common_la_CPPFLAGS += -DWANT_LINKER_N
 endif
 libhybris_common_la_LDFLAGS = \
 	-ldl \

@@ -2925,8 +2925,11 @@ static void* __hybris_load_linker(const char *path)
 
 #define LINKER_NAME_JB "jb"
 #define LINKER_NAME_MM "mm"
+#define LINKER_NAME_N "n"
 
-#if defined(WANT_LINKER_JB)
+#if defined(WANT_LINKER_N)
+#define LINKER_NAME_DEFAULT LINKER_NAME_N
+#elif defined(WANT_LINKER_JB)
 #define LINKER_NAME_DEFAULT LINKER_NAME_JB
 #elif defined(WANT_LINKER_MM)
 #define LINKER_NAME_DEFAULT LINKER_NAME_MM
@@ -2946,6 +2949,10 @@ static void __hybris_linker_init()
     /* See https://source.android.com/source/build-numbers.html for
      * an overview over available SDK version numbers and which
      * Android version they relate to. */
+#if defined(WANT_LINKER_N)
+    if (sdk_version <= 25)
+        name = LINKER_NAME_N;
+#endif
 #if defined(WANT_LINKER_MM)
     if (sdk_version <= 23)
         name = LINKER_NAME_MM;
