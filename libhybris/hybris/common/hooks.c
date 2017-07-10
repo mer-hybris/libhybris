@@ -79,6 +79,7 @@ static hybris_hook_cb hook_callback = NULL;
 static void (*_android_linker_init)(int sdk_version, void* (*get_hooked_symbol)(const char*, const char*)) = NULL;
 static void* (*_android_dlopen)(const char *filename, int flags) = NULL;
 static void* (*_android_dlsym)(void *handle, const char *symbol) = NULL;
+static void* (*_android_dlvsym)(void *handle, const char *symbol, const char* version) = NULL;
 static void* (*_android_dladdr)(void *addr, Dl_info *info) = NULL;
 static int (*_android_dlclose)(void *handle) = NULL;
 static const char* (*_android_dlerror)(void) = NULL;
@@ -2394,6 +2395,13 @@ static void *_hybris_hook_dlsym(void *handle, const char *symbol)
     return _android_dlsym(handle,symbol);
 }
 
+static void *_hybris_hook_dlvsym(void *handle, const char *symbol, const char* version)
+{
+    TRACE("handle %p symbol %s version %s", handle, symbol, version);
+
+    return _android_dlvsym(handle,symbol,version);
+}
+
 static void* _hybris_hook_dladdr(void *addr, Dl_info *info)
 {
     TRACE("addr %p info %p", addr, info);
@@ -2635,6 +2643,7 @@ static struct _hook hooks_common[] = {
     HOOK_INDIRECT(dlopen),
     HOOK_INDIRECT(dlerror),
     HOOK_INDIRECT(dlsym),
+    HOOK_INDIRECT(dlvsym),
     HOOK_INDIRECT(dladdr),
     HOOK_INDIRECT(dlclose),
     /* dirent.h */
@@ -2979,6 +2988,7 @@ static void __hybris_linker_init()
     _android_linker_init = dlsym(linker_handle, "android_linker_init");
     _android_dlopen = dlsym(linker_handle, "android_dlopen");
     _android_dlsym = dlsym(linker_handle, "android_dlsym");
+    _android_dlvsym = dlsym(linker_handle, "android_dlvsym");
     _android_dladdr = dlsym(linker_handle, "android_dladdr");
     _android_dlclose = dlsym(linker_handle, "android_dlclose");
     _android_dlerror = dlsym(linker_handle, "android_dlerror");
@@ -3015,6 +3025,16 @@ void *android_dlsym(void *handle, const char *symbol)
         return NULL;
 
     return _android_dlsym(handle,symbol);
+}
+
+void *android_dlvsym(void *handle, const char *symbol, const char* version)
+{
+    ENSURE_LINKER_IS_LOADED();
+
+    if (!_android_dlvsym)
+        return NULL;
+
+    return _android_dlvsym(handle,symbol, version);
 }
 
 int android_dlclose(void *handle)
