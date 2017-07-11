@@ -2883,6 +2883,10 @@ static void* __hybris_get_hooked_symbol(const char *sym, const char *requester)
 
     /* Allow newer hooks to override those which are available for all versions */
     key.name = sym;
+#if defined(WANT_LINKER_N)
+    if (get_android_sdk_version() > 21)
+        found = bsearch(&key, hooks_mm, HOOKS_SIZE(hooks_mm), sizeof(hooks_mm[0]), hook_cmp);
+#endif
 #if defined(WANT_LINKER_MM)
     if (get_android_sdk_version() > 21)
         found = bsearch(&key, hooks_mm, HOOKS_SIZE(hooks_mm), sizeof(hooks_mm[0]), hook_cmp);
