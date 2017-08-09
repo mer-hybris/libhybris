@@ -247,6 +247,7 @@ autoreconf -v -f -i
   %{!?qa_stage_devel:--enable-debug} \
   %{!?qa_stage_devel:--enable-trace} \
   --with-android-headers=/usr/lib/droid-devel/droid-headers \
+  --enable-adreno-quirks \
 %ifarch %{arm}
   --enable-arch=arm \
 %endif
