@@ -300,6 +300,22 @@ rm %{buildroot}/%{_libdir}/*.la %{buildroot}/%{_libdir}/libhybris/*.la
 %{_libdir}/libandroid-properties.so.*
 %{_bindir}/getprop
 %{_bindir}/setprop
+%{_libdir}/libcamera.so.1
+%{_libdir}/libcamera.so.1.0.0
+%{_libdir}/libhybris/linker/jb.la
+%{_libdir}/libhybris/linker/jb.so
+%{_libdir}/libhybris/linker/n.la
+%{_libdir}/libhybris/linker/n.so
+%{_libdir}/libis.so.1
+%{_libdir}/libis.so.1.0.0
+%{_libdir}/libmedia.so.1
+%{_libdir}/libmedia.so.1.0.0
+%{_libdir}/libsf.so.1
+%{_libdir}/libsf.so.1.0.0
+%{_libdir}/libui.so.1
+%{_libdir}/libui.so.1.0.0
+%{_libdir}/libwifi.so.1
+%{_libdir}/libwifi.so.1.0.0
 
 %files devel
 %defattr(-,root,root,-)
@@ -309,12 +325,25 @@ rm %{buildroot}/%{_libdir}/*.la %{buildroot}/%{_libdir}/libhybris/*.la
 %{_includedir}/hybris/common/binding.h
 %{_includedir}/hybris/common/dlfcn.h
 %{_includedir}/hybris/common/floating_point_abi.h
+%{_includedir}/hybris/common/hooks.h
 %{_libdir}/libhybris-common.so
 %{_libdir}/libandroid-properties.so
 %{_libdir}/pkgconfig/libandroid-properties.pc
 %{_includedir}/hybris/camera/*.h
 %{_includedir}/hybris/surface_flinger/surface_flinger_compatibility_layer.h
 %{_includedir}/hybris/ui/ui_compatibility_layer.h
+%{_includedir}/hybris/media/*.h
+%{_libdir}/libcamera.so
+%{_libdir}/libis.so
+%{_libdir}/libmedia.so
+%{_libdir}/libsf.so
+%{_libdir}/libui.so
+%{_libdir}/libwifi.so
+%{_libdir}/pkgconfig/libcamera.pc
+%{_libdir}/pkgconfig/libis.pc
+%{_libdir}/pkgconfig/libmedia.pc
+%{_libdir}/pkgconfig/libsf.pc
+%{_libdir}/pkgconfig/libwifi.pc
 
 
 %files libEGL
