@@ -267,7 +267,6 @@ autoreconf -v -f -i
   %{!?qa_stage_devel:--enable-debug} \
   %{!?qa_stage_devel:--enable-trace} \
   --with-android-headers=/usr/lib/droid-devel/droid-headers \
-  --enable-experimental \
   --enable-mali-quirks \
 %ifarch %{ix86}
   --enable-arch=x86 \
@@ -331,8 +330,6 @@ rm %{buildroot}/%{_libdir}/*.la %{buildroot}/%{_libdir}/libhybris/*.la
 %{_libdir}/libandroid-properties.so.*
 %{_bindir}/getprop
 %{_bindir}/setprop
-%{_libdir}/libhybris/linker/mm.la
-%{_libdir}/libhybris/linker/mm.so
 %ifnarch aarch64
   %{_libdir}/libhybris/linker/jb.la
   %{_libdir}/libhybris/linker/jb.so
