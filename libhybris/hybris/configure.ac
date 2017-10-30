@@ -48,6 +48,12 @@ AC_ARG_ENABLE(experimental,
   [experimental="no"])
 AM_CONDITIONAL( [WANT_EXPERIMENTAL], [test x"$experimental" = x"yes"])
 
+AC_ARG_ENABLE(adreno_quirks,
+  [  --enable-adreno-quirks     Enable adreno quirks (default=disabled)],
+  [adreno_quirks=$enableval],
+  [adreno_quirks="no"])
+AM_CONDITIONAL( [WANT_ADRENO_QUIRKS], [test x"$adreno_quirks" = x"yes"])
+
 AC_ARG_ENABLE(initialize_bionic,
   [  --enable-initialize-bionic     Enable initialization of bionic libc.so (default=disabled)],
   [initialize_bionic=$enableval],
@@ -131,9 +137,9 @@ AC_ARG_WITH(default-egl-platform,
 AC_SUBST(DEFAULT_EGL_PLATFORM)
 
 if test "x$arch" = "xarm" -o "x$arch" = "xx86"; then
-  DEFAULT_HYBRIS_LD_LIBRARY_PATH="/vendor/lib:/system/lib"
+  DEFAULT_HYBRIS_LD_LIBRARY_PATH="/vendor/lib:/system/lib:/odm/lib"
 else
-  DEFAULT_HYBRIS_LD_LIBRARY_PATH="/vendor/lib64:/system/lib64"
+  DEFAULT_HYBRIS_LD_LIBRARY_PATH="/vendor/lib64:/system/lib64:/odm/lib64"
 fi
 AC_ARG_WITH(default-hybris-ld-library-path,
   [  --with-default-hybris-ld-library-path=PATH1:PATH2:...     Use PATH1:PATH2 for default HYBRIS_LD_LIBRARY_PATH if not specified by environment ],
