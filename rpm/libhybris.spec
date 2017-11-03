@@ -300,6 +300,8 @@ rm %{buildroot}/%{_libdir}/*.la %{buildroot}/%{_libdir}/libhybris/*.la
 %{_libdir}/libandroid-properties.so.*
 %{_bindir}/getprop
 %{_bindir}/setprop
+%{_libdir}/libhybris/linker/*.la
+%{_libdir}/libhybris/linker/*.so
 
 %files devel
 %defattr(-,root,root,-)
