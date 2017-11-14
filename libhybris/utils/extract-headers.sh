@@ -171,7 +171,13 @@ extract_headers_to hardware_legacy \
     hardware/libhardware_legacy/include/hardware_legacy/vibrator.h
 if [ $MAJOR -ge 4 -a $MINOR -ge 1 -o $MAJOR -ge 5 ]; then
     extract_headers_to hardware_legacy \
-        hardware/libhardware_legacy/include/hardware_legacy/audio_policy_conf.h
+        hardware/libhardware_legacy/include/hardware_legacy/audio_policy_conf.h \
+        hardware/libhardware_legacy/include/hardware_legacy/wifi.h
+fi
+
+if [ $MAJOR -ge 6 ]; then
+	extract_headers_to system \
+	    system/media/audio/include/system/audio.h
 fi
 
 extract_headers_to cutils \
@@ -197,7 +203,7 @@ if [ $MAJOR -eq 4 -a $MINOR -ge 1 ]; then
 
     extract_headers_to sync \
         system/core/include/sync
-elif [ $MAJOR -eq 5 ]; then
+elif [ $MAJOR -ge 5 ]; then
     extract_headers_to linux \
         bionic/libc/kernel/uapi/linux/sync.h \
         bionic/libc/kernel/uapi/linux/sw_sync.h
@@ -275,13 +281,16 @@ fi
 cat > ${HEADERPATH}/Makefile << EOF
 PREFIX?=/usr/local
 INCLUDEDIR?=\$(PREFIX)/include/android
+PKGCONFIGDIR?=\$(PREFIX)/lib/pkgconfig
 all:
 	@echo "Use '\$(MAKE) install' to install"
 
 install:
 	mkdir -p \$(DESTDIR)/\$(INCLUDEDIR)
-	cp android-config.h android-version.h android-headers.pc \$(DESTDIR)/\$(INCLUDEDIR)
-	sed -i -e s:prefix=/usr:prefix=\$(PREFIX):g \$(DESTDIR)/\$(INCLUDEDIR)/android-headers.pc
+	mkdir -p \$(DESTDIR)/\$(PKGCONFIGDIR)
+	cp android-config.h android-version.h \$(DESTDIR)/\$(INCLUDEDIR)
+	cp android-headers.pc \$(DESTDIR)/\$(PKGCONFIGDIR)
+	sed -i -e s:prefix=/usr:prefix=\$(PREFIX):g \$(DESTDIR)/\$(PKGCONFIGDIR)/android-headers.pc
 	cp -r hardware \$(DESTDIR)/\$(INCLUDEDIR)
 	cp -r hardware_legacy \$(DESTDIR)/\$(INCLUDEDIR)
 	cp -r cutils \$(DESTDIR)/\$(INCLUDEDIR)
@@ -291,6 +300,7 @@ install:
 	cp -r sync \$(DESTDIR)/\$(INCLUDEDIR)
 	cp -r libnfc-nxp \$(DESTDIR)/\$(INCLUDEDIR)
 	cp -r private \$(DESTDIR)/\$(INCLUDEDIR)
+	cp -r log \$(DESTDIR)/\$(INCLUDEDIR)
 EOF
 
 find "$HEADERPATH" -type f -exec chmod 0644 {} \;
