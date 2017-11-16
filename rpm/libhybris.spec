@@ -309,12 +309,14 @@ rm %{buildroot}/%{_libdir}/*.la %{buildroot}/%{_libdir}/libhybris/*.la
 %{_includedir}/hybris/common/binding.h
 %{_includedir}/hybris/common/dlfcn.h
 %{_includedir}/hybris/common/floating_point_abi.h
+%{_includedir}/hybris/common/hooks.h
 %{_libdir}/libhybris-common.so
 %{_libdir}/libandroid-properties.so
 %{_libdir}/pkgconfig/libandroid-properties.pc
 %{_includedir}/hybris/camera/*.h
 %{_includedir}/hybris/surface_flinger/surface_flinger_compatibility_layer.h
 %{_includedir}/hybris/ui/ui_compatibility_layer.h
+%{_includedir}/hybris/media/*.h
 
 
 %files libEGL
