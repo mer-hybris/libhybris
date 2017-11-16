@@ -232,8 +232,20 @@ Requires: %{name}-libhardware = %{version}-%{release}
 Requires: %{name}-libsync = %{version}-%{release}
 Requires: %{name}-libvibrator = %{version}-%{release}
 
-
 %description tests
+%{summary}.
+
+%package tests-upstream
+Summary: Tests from upstream %{name} but not working on our side
+Requires(post): /sbin/ldconfig
+Requires(postun): /sbin/ldconfig
+Requires: %{name} = %{version}-%{release}
+Requires: %{name}-libEGL = %{version}-%{release}
+Requires: %{name}-libGLESv2 = %{version}-%{release}
+Requires: %{name}-libhardware = %{version}-%{release}
+Requires: %{name}-libsync = %{version}-%{release}
+
+%description tests-upstream
 %{summary}.
 
 %prep
@@ -293,6 +305,9 @@ rm %{buildroot}/%{_libdir}/*.la %{buildroot}/%{_libdir}/libhybris/*.la
 %post libvibrator -p /sbin/ldconfig
 %postun libvibrator -p /sbin/ldconfig
 
+%post tests-upstream -p /sbin/ldconfig
+%postun tests-upstream -p /sbin/ldconfig
+
 %files
 %defattr(-,root,root,-)
 %doc hybris/AUTHORS hybris/COPYING
@@ -302,6 +317,8 @@ rm %{buildroot}/%{_libdir}/*.la %{buildroot}/%{_libdir}/libhybris/*.la
 %{_bindir}/setprop
 %{_libdir}/libhybris/linker/*.la
 %{_libdir}/libhybris/linker/*.so
+%{_libdir}/libwifi.so.1
+%{_libdir}/libwifi.so.1.0.0
 
 %files devel
 %defattr(-,root,root,-)
@@ -319,7 +336,8 @@ rm %{buildroot}/%{_libdir}/*.la %{buildroot}/%{_libdir}/libhybris/*.la
 %{_includedir}/hybris/surface_flinger/surface_flinger_compatibility_layer.h
 %{_includedir}/hybris/ui/ui_compatibility_layer.h
 %{_includedir}/hybris/media/*.h
-
+%{_libdir}/libwifi.so
+%{_libdir}/pkgconfig/libwifi.pc
 
 %files libEGL
 %defattr(-,root,root,-)
@@ -430,4 +448,41 @@ rm %{buildroot}/%{_libdir}/*.la %{buildroot}/%{_libdir}/libhybris/*.la
 
 %files tests
 %defattr(-,root,root,-)
-%{_bindir}/test_*
+%{_bindir}/test_audio
+%{_bindir}/test_egl
+%{_bindir}/test_egl_configs
+%{_bindir}/test_glesv2
+%{_bindir}/test_gps
+%{_bindir}/test_hwcomposer
+%{_bindir}/test_lights
+%{_bindir}/test_nfc
+%{_bindir}/test_sensors
+%{_bindir}/test_vibrator
+%{_bindir}/test_wifi
+
+%files tests-upstream
+%defattr(-,root,root,-)
+%{_libdir}/libcamera.so
+%{_libdir}/libis.so
+%{_libdir}/libmedia.so
+%{_libdir}/libsf.so
+%{_libdir}/libui.so
+%{_libdir}/pkgconfig/libcamera.pc
+%{_libdir}/pkgconfig/libis.pc
+%{_libdir}/pkgconfig/libmedia.pc
+%{_libdir}/pkgconfig/libsf.pc
+%{_libdir}/libcamera.so.1
+%{_libdir}/libcamera.so.1.0.0
+%{_libdir}/libis.so.1
+%{_libdir}/libis.so.1.0.0
+%{_libdir}/libmedia.so.1
+%{_libdir}/libmedia.so.1.0.0
+%{_libdir}/libsf.so.1
+%{_libdir}/libsf.so.1.0.0
+%{_libdir}/libui.so.1
+%{_libdir}/libui.so.1.0.0
+%{_bindir}/test_camera
+%{_bindir}/test_input
+%{_bindir}/test_media
+%{_bindir}/test_recorder
+%{_bindir}/test_sf
