@@ -26,6 +26,8 @@
  * SUCH DAMAGE.
  */
 
+#include "config.h"
+
 #include <linux/auxvec.h>
 
 #include <stdio.h>
@@ -79,6 +81,7 @@
  *   having a hard limit (64)
 */
 
+static void* (*_get_hooked_symbol)(const char *symbol, const char *requester);
 
 static int link_image(soinfo *si, unsigned wr_offset);
 
@@ -619,6 +622,13 @@ static int open_library(const char *name)
 
     if(name == 0) return -1;
     if(strlen(name) > 256) return -1;
+
+    if ((name[0] == '/') && (getenv("HYBRIS_LINKER_FORCE_BASENAME") != NULL))
+    {
+        const char *bname = strrchr(name, '/');
+        if ((bname != NULL) && ((fd = open_library(bname+1)) >= 0))
+            return fd;
+    }
 
     if ((name[0] == '/') && ((fd = _open_lib(name)) >= 0))
         return fd;
@@ -1327,7 +1337,7 @@ static int reloc_library(soinfo *si, Elf_Rel *rel, unsigned count)
         if(sym != 0) {
             sym_name = (char *)(strtab + symtab[sym].st_name);
             INFO("HYBRIS: '%s' checking hooks for sym '%s'\n", si->name, sym_name);
-            sym_addr = get_hooked_symbol(sym_name);
+            sym_addr = _get_hooked_symbol(sym_name, si->name);
             if (sym_addr != NULL) {
                 INFO("HYBRIS: '%s' hooked symbol %s to %x\n", si->name,
                                                   sym_name, sym_addr);
@@ -2332,4 +2342,13 @@ unsigned __linker_init(unsigned **elfdata) {
     // We have successfully fixed our own relocations. It's safe to run
     // the main part of the linker now.
     return __linker_init_post_relocation(elfdata);
+}
+
+#ifdef WANT_ARM_TRACING
+void android_linker_init(int sdk_version, void *(get_hooked_symbol)(const char*, const char*), void *(create_wrapper)(const char*, void*, int)) {
+#else
+void android_linker_init(int sdk_version, void *(get_hooked_symbol)(const char*, const char*)) {
+#endif
+   (void) sdk_version;
+   _get_hooked_symbol = get_hooked_symbol;
 }
