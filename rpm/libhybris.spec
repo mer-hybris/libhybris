@@ -1,3 +1,6 @@
+%define USE_MALI %{getenv:USE_MALI}
+%define USE_EXPEREMENTAL %{getenv:USE_EXPEREMENTAL}
+
 Name:      libhybris
 Version:   0.0.0
 Release:   1%{?dist}
@@ -267,8 +270,12 @@ autoreconf -v -f -i
   %{!?qa_stage_devel:--enable-debug} \
   %{!?qa_stage_devel:--enable-trace} \
   --with-android-headers=/usr/lib/droid-devel/droid-headers \
+%if "%{?USE_EXPEREMENTAL}" == "1"
   --enable-experimental \
+%endif
+%if "%{USE_MALI}" == "1"
   --enable-mali-quirks \
+%endif
   --enable-adreno-quirks \
   --enable-initialize-bionic \
 %ifarch %{ix86}
@@ -333,8 +340,10 @@ rm %{buildroot}/%{_libdir}/*.la %{buildroot}/%{_libdir}/libhybris/*.la
 %{_libdir}/libandroid-properties.so.*
 %{_bindir}/getprop
 %{_bindir}/setprop
+%if "%{?USE_EXPEREMENTAL}" == "1"
 %{_libdir}/libhybris/linker/mm.la
 %{_libdir}/libhybris/linker/mm.so
+%endif
 %ifnarch aarch64
   %{_libdir}/libhybris/linker/jb.la
   %{_libdir}/libhybris/linker/jb.so
