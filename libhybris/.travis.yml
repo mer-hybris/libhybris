@@ -1,9 +1,0 @@
-language: cpp
-os: linux
-sudo: required
-
-services:
-  - docker
-
-script:
-  - utils/travis-build.sh
