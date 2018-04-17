@@ -390,12 +390,15 @@ rm %{buildroot}/%{_libdir}/*.la %{buildroot}/%{_libdir}/libhybris/*.la
 
 %files libOpenCL
 %defattr(-,root,root,-)
+%{_libdir}/libOpenCL.so.*
 # We don't have implementation of OpenCL atm.
 
 %files libOpenCL-devel
 %defattr(-,root,root,-)
 %{_includedir}/CL/*.h
 %{_includedir}/CL/*.hpp
+%{_libdir}/libOpenCL.so
+%{_libdir}/pkgconfig/OpenCL.pc
 
 %files libOpenVG
 %defattr(-,root,root,-)
@@ -461,6 +464,7 @@ rm %{buildroot}/%{_libdir}/*.la %{buildroot}/%{_libdir}/libhybris/*.la
 %{_bindir}/test_hwcomposer
 %{_bindir}/test_lights
 %{_bindir}/test_nfc
+%{_bindir}/test_opencl
 %{_bindir}/test_sensors
 %{_bindir}/test_vibrator
 %{_bindir}/test_wifi
