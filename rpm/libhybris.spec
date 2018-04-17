@@ -295,6 +295,9 @@ rm %{buildroot}/%{_libdir}/*.la %{buildroot}/%{_libdir}/libhybris/*.la
 %post libGLESv2 -p /sbin/ldconfig
 %postun libGLESv2 -p /sbin/ldconfig
 
+%post libOpenCL -p /sbin/ldconfig
+%postun libOpenCL -p /sbin/ldconfig
+
 %post libwayland-egl -p /sbin/ldconfig
 %postun libwayland-egl -p /sbin/ldconfig
 
@@ -391,7 +394,6 @@ rm %{buildroot}/%{_libdir}/*.la %{buildroot}/%{_libdir}/libhybris/*.la
 %files libOpenCL
 %defattr(-,root,root,-)
 %{_libdir}/libOpenCL.so.*
-# We don't have implementation of OpenCL atm.
 
 %files libOpenCL-devel
 %defattr(-,root,root,-)
