@@ -185,24 +185,24 @@ Requires: %{name}-libsync = %{version}-%{release}
 %description libsync-devel
 %{summary}.
 
-%package libnfc
-Summary: Near Field Communication for %{name}
-Requires(post): /sbin/ldconfig
-Requires(postun): /sbin/ldconfig
-Requires: %{name} = %{version}-%{release}
+#%package libnfc
+#Summary: Near Field Communication for %{name}
+#Requires(post): /sbin/ldconfig
+#Requires(postun): /sbin/ldconfig
+#Requires: %{name} = %{version}-%{release}
 
-%description libnfc
-%{summary}.
+#%description libnfc
+#%{summary}.
+#
+#%package libnfc-devel
+#Summary: Near Field Communication development library for %{name}
+#Requires(post): /sbin/ldconfig
+#Requires(postun): /sbin/ldconfig
+#Requires: %{name} = %{version}-%{release}
+#Requires: %{name}-libnfc = %{version}-%{release}
 
-%package libnfc-devel
-Summary: Near Field Communication development library for %{name}
-Requires(post): /sbin/ldconfig
-Requires(postun): /sbin/ldconfig
-Requires: %{name} = %{version}-%{release}
-Requires: %{name}-libnfc = %{version}-%{release}
-
-%description libnfc-devel
-%{summary}.
+#%description libnfc-devel
+#%{summary}.
 
 %package libvibrator
 Summary: Vibrator for %{name}
@@ -221,6 +221,25 @@ Requires: %{name} = %{version}-%{release}
 Requires: %{name}-libvibrator = %{version}-%{release}
 
 %description libvibrator-devel
+%{summary}.
+
+%package libsf
+Summary: SurfaceFlinger support helpers for %{name}
+Requires(post): /sbin/ldconfig
+Requires(postun): /sbin/ldconfig
+Requires: %{name} = %{version}-%{release}
+
+%description libsf
+%{summary}.
+
+%package libsf-devel
+Summary: SurfaceFlinger support development library for %{name}
+Requires(post): /sbin/ldconfig
+Requires(postun): /sbin/ldconfig
+Requires: %{name} = %{version}-%{release}
+Requires: %{name}-libsf = %{version}-%{release}
+
+%description libsf-devel
 %{summary}.
 
 %package tests
@@ -268,10 +287,11 @@ autoreconf -v -f -i
 %endif
 %ifarch %{aarch64}
   --enable-arch=arm64 \
-  --with-default-hybris-ld-library-path=/usr/libexec/droid-hybris/system/lib64:/vendor/lib64:/system/lib64:/odm/lib64
+  --with-default-hybris-ld-library-path=/usr/libexec/droid-hybris/system/lib64:/vendor/lib64:/system/lib64:/odm/lib64 \
 %else
-  --with-default-hybris-ld-library-path=/usr/libexec/droid-hybris/system/lib:/vendor/lib:/system/lib:/odm/lib
+  --with-default-hybris-ld-library-path=/usr/libexec/droid-hybris/system/lib:/vendor/lib:/system/lib:/odm/lib \
 %endif
+  --enable-silent-rules
 
 make
 
@@ -307,11 +327,14 @@ rm %{buildroot}/%{_libdir}/*.la %{buildroot}/%{_libdir}/libhybris/*.la
 %post libsync -p /sbin/ldconfig
 %postun libsync -p /sbin/ldconfig
 
-%post libnfc -p /sbin/ldconfig
-%postun libnfc -p /sbin/ldconfig
+#%post libnfc -p /sbin/ldconfig
+#%postun libnfc -p /sbin/ldconfig
 
 %post libvibrator -p /sbin/ldconfig
 %postun libvibrator -p /sbin/ldconfig
+
+%post libsf -p /sbin/ldconfig
+%postun libsf -p /sbin/ldconfig
 
 %post tests-upstream -p /sbin/ldconfig
 %postun tests-upstream -p /sbin/ldconfig
@@ -321,12 +344,15 @@ rm %{buildroot}/%{_libdir}/*.la %{buildroot}/%{_libdir}/libhybris/*.la
 %doc hybris/AUTHORS hybris/COPYING
 %{_libdir}/libhybris-common.so.*
 %{_libdir}/libandroid-properties.so.*
+%{_libdir}/libgralloc.so
+%{_libdir}/libgralloc.so.1
+%{_libdir}/libgralloc.so.1.0.0
 %{_bindir}/getprop
 %{_bindir}/setprop
 %{_libdir}/libhybris/linker/*.la
 %{_libdir}/libhybris/linker/*.so
-%{_libdir}/libwifi.so.1
-%{_libdir}/libwifi.so.1.0.0
+#%{_libdir}/libwifi.so.1
+#%{_libdir}/libwifi.so.1.0.0
 
 %files devel
 %defattr(-,root,root,-)
@@ -338,14 +364,15 @@ rm %{buildroot}/%{_libdir}/*.la %{buildroot}/%{_libdir}/libhybris/*.la
 %{_includedir}/hybris/common/floating_point_abi.h
 %{_includedir}/hybris/common/hooks.h
 %{_libdir}/libhybris-common.so
+%{_libdir}/pkgconfig/libgralloc.pc
 %{_libdir}/libandroid-properties.so
 %{_libdir}/pkgconfig/libandroid-properties.pc
 %{_includedir}/hybris/camera/*.h
 %{_includedir}/hybris/surface_flinger/surface_flinger_compatibility_layer.h
 %{_includedir}/hybris/ui/ui_compatibility_layer.h
 %{_includedir}/hybris/media/*.h
-%{_libdir}/libwifi.so
-%{_libdir}/pkgconfig/libwifi.pc
+#%{_libdir}/libwifi.so
+#%{_libdir}/pkgconfig/libwifi.pc
 
 %files libEGL
 %defattr(-,root,root,-)
@@ -438,14 +465,14 @@ rm %{buildroot}/%{_libdir}/*.la %{buildroot}/%{_libdir}/libhybris/*.la
 %{_libdir}/libsync.so
 %{_libdir}/pkgconfig/libsync.pc
 
-%files libnfc
-%defattr(-,root,root,-)
-%{_libdir}/libnfc_*.so.*
+#%files libnfc
+#%defattr(-,root,root,-)
+#%{_libdir}/libnfc_*.so.*
 
-%files libnfc-devel
-%defattr(-,root,root,-)
-%{_libdir}/libnfc_*.so
-%{_libdir}/pkgconfig/libnfc_*.pc
+#%files libnfc-devel
+#%defattr(-,root,root,-)
+#%{_libdir}/libnfc_*.so
+#%{_libdir}/pkgconfig/libnfc_*.pc
 
 %files libvibrator
 %defattr(-,root,root,-)
@@ -456,6 +483,16 @@ rm %{buildroot}/%{_libdir}/*.la %{buildroot}/%{_libdir}/libhybris/*.la
 %{_libdir}/libvibrator.so
 %{_libdir}/pkgconfig/libvibrator.pc
 
+%files libsf
+%defattr(-,root,root-)
+%{_libdir}/libsf.so.1
+%{_libdir}/libsf.so.1.0.0
+
+%files libsf-devel
+%defattr(-,root,root,-)
+%{_libdir}/libsf.so
+%{_libdir}/pkgconfig/libsf.pc
+
 %files tests
 %defattr(-,root,root,-)
 %{_bindir}/test_audio
@@ -465,31 +502,27 @@ rm %{buildroot}/%{_libdir}/*.la %{buildroot}/%{_libdir}/libhybris/*.la
 %{_bindir}/test_gps
 %{_bindir}/test_hwcomposer
 %{_bindir}/test_lights
-%{_bindir}/test_nfc
+#%{_bindir}/test_nfc
 %{_bindir}/test_opencl
 %{_bindir}/test_sensors
 %{_bindir}/test_vibrator
-%{_bindir}/test_wifi
+#%{_bindir}/test_wifi
 
 %files tests-upstream
 %defattr(-,root,root,-)
 %{_libdir}/libcamera.so
 %{_libdir}/libis.so
 %{_libdir}/libmedia.so
-%{_libdir}/libsf.so
 %{_libdir}/libui.so
 %{_libdir}/pkgconfig/libcamera.pc
 %{_libdir}/pkgconfig/libis.pc
 %{_libdir}/pkgconfig/libmedia.pc
-%{_libdir}/pkgconfig/libsf.pc
 %{_libdir}/libcamera.so.1
 %{_libdir}/libcamera.so.1.0.0
 %{_libdir}/libis.so.1
 %{_libdir}/libis.so.1.0.0
 %{_libdir}/libmedia.so.1
 %{_libdir}/libmedia.so.1.0.0
-%{_libdir}/libsf.so.1
-%{_libdir}/libsf.so.1.0.0
 %{_libdir}/libui.so.1
 %{_libdir}/libui.so.1.0.0
 %{_bindir}/test_camera
