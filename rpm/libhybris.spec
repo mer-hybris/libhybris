@@ -9,6 +9,7 @@ URL:       https://github.com/libhybris/libhybris
 Source:    %{name}-%{version}.tar.bz2
 BuildRequires: libtool
 BuildRequires: pkgconfig(wayland-client)
+BuildRequires: pkgconfig(wayland-server)
 # When droid-hal-ha builds for a specific HA it should provide
 # droid-hal-devel via droid-hal-%{device}-devel package
 BuildRequires: droid-hal-devel
