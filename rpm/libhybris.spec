@@ -238,6 +238,7 @@ Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
 Requires: %{name} = %{version}-%{release}
 Requires: %{name}-libsf = %{version}-%{release}
+Provides: libsf-devel
 
 %description libsf-devel
 %{summary}.
