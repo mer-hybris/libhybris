@@ -348,6 +348,9 @@ rm %{buildroot}/%{_libdir}/*.la %{buildroot}/%{_libdir}/libhybris/*.la
 %{_libdir}/libgralloc.so
 %{_libdir}/libgralloc.so.1
 %{_libdir}/libgralloc.so.1.0.0
+%{_libdir}/libhwc2.so
+%{_libdir}/libhwc2.so.1
+%{_libdir}/libhwc2.so.1.0.0
 %{_bindir}/getprop
 %{_bindir}/setprop
 %{_libdir}/libhybris/linker/*.la
@@ -374,6 +377,8 @@ rm %{buildroot}/%{_libdir}/*.la %{buildroot}/%{_libdir}/libhybris/*.la
 %{_includedir}/hybris/media/*.h
 #%{_libdir}/libwifi.so
 #%{_libdir}/pkgconfig/libwifi.pc
+%{_includedir}/hybris/hwc2/hwc2_compatibility_layer.h
+%{_libdir}/pkgconfig/libhwc2.pc
 
 %files libEGL
 %defattr(-,root,root,-)
@@ -508,6 +513,7 @@ rm %{buildroot}/%{_libdir}/*.la %{buildroot}/%{_libdir}/libhybris/*.la
 %{_bindir}/test_sensors
 %{_bindir}/test_vibrator
 #%{_bindir}/test_wifi
+%{_bindir}/test_hwc2
 
 %files tests-upstream
 %defattr(-,root,root,-)
