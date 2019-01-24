@@ -299,7 +299,11 @@ autoreconf -v -f -i
   --enable-wayland \
   %{!?qa_stage_devel:--enable-debug} \
   %{!?qa_stage_devel:--enable-trace} \
+%if 0%{?android_headers:1}
+  --with-android-headers=%{android_headers} \
+%else
   --with-android-headers=/usr/lib/droid-devel/droid-headers \
+%endif
   --enable-property-cache \
 %ifarch %{arm}
   --enable-arch=arm \
