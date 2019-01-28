@@ -297,8 +297,8 @@ cd hybris
 autoreconf -v -f -i
 %configure \
   --enable-wayland \
-  %{!?qa_stage_devel:--enable-debug} \
-  %{!?qa_stage_devel:--enable-trace} \
+  %{?qa_stage_devel:--enable-debug} \
+  %{?qa_stage_devel:--enable-trace} \
 %if 0%{?android_headers:1}
   --with-android-headers=%{android_headers} \
 %else
