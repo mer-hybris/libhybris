@@ -248,6 +248,14 @@ Requires: %{name}-libsync = %{version}-%{release}
 %description tests-upstream
 %{summary}.
 
+%package doc
+Summary:   Documentation for %{name}
+Group:     Documentation
+Requires:  %{name} = %{version}-%{release}
+
+%description doc
+%{summary}.
+
 %prep
 %setup -q -n %{name}-%{version}/%{name}
 
@@ -282,6 +290,9 @@ make install DESTDIR=$RPM_BUILD_ROOT
 
 # Remove the static libraries.
 rm %{buildroot}/%{_libdir}/*.la %{buildroot}/%{_libdir}/libhybris/*.la
+
+mkdir -p %{buildroot}%{_docdir}/%{name}-%{version}
+install -m0644 AUTHORS %{buildroot}%{_docdir}/%{name}-%{version}
 
 %post -p /sbin/ldconfig
 %postun -p /sbin/ldconfig
@@ -318,7 +329,8 @@ rm %{buildroot}/%{_libdir}/*.la %{buildroot}/%{_libdir}/libhybris/*.la
 
 %files
 %defattr(-,root,root,-)
-%doc hybris/AUTHORS hybris/COPYING
+%license hybris/COPYING
+%dir %{_libdir}/libhybris
 %{_libdir}/libhybris-common.so.*
 %{_libdir}/libandroid-properties.so.*
 %{_bindir}/getprop
@@ -330,20 +342,18 @@ rm %{buildroot}/%{_libdir}/*.la %{buildroot}/%{_libdir}/libhybris/*.la
 
 %files devel
 %defattr(-,root,root,-)
-%{_includedir}/hybris/input/*.h
-%{_includedir}/hybris/properties/properties.h
-%{_includedir}/hybris/dlfcn/dlfcn.h
-%{_includedir}/hybris/common/binding.h
-%{_includedir}/hybris/common/dlfcn.h
-%{_includedir}/hybris/common/floating_point_abi.h
-%{_includedir}/hybris/common/hooks.h
+%dir %{_includedir}/hybris
+%{_includedir}/hybris/input
+%{_includedir}/hybris/properties
+%{_includedir}/hybris/dlfcn
+%{_includedir}/hybris/common
 %{_libdir}/libhybris-common.so
 %{_libdir}/libandroid-properties.so
 %{_libdir}/pkgconfig/libandroid-properties.pc
-%{_includedir}/hybris/camera/*.h
-%{_includedir}/hybris/surface_flinger/surface_flinger_compatibility_layer.h
-%{_includedir}/hybris/ui/ui_compatibility_layer.h
-%{_includedir}/hybris/media/*.h
+%{_includedir}/hybris/camera
+%{_includedir}/hybris/surface_flinger
+%{_includedir}/hybris/ui
+%{_includedir}/hybris/media
 %{_libdir}/libwifi.so
 %{_libdir}/pkgconfig/libwifi.pc
 
@@ -359,15 +369,14 @@ rm %{buildroot}/%{_libdir}/*.la %{buildroot}/%{_libdir}/libhybris/*.la
 
 %files libEGL-devel
 %defattr(-,root,root,-)
-%{_includedir}/KHR/*.h
-%{_includedir}/EGL/*.h
-%{_includedir}/hybris/eglplatformcommon/*.h
+%{_includedir}/KHR
+%{_includedir}/EGL
+%{_includedir}/hybris/eglplatformcommon
 %{_libdir}/libEGL.so
 %{_libdir}/libhybris-eglplatformcommon.so
 %{_libdir}/pkgconfig/egl.pc
 %{_libdir}/pkgconfig/hybris-egl-platform.pc
-%{_includedir}/hybris/hwcomposerwindow/hwcomposer.h
-%{_includedir}/hybris/hwcomposerwindow/hwcomposer_window.h
+%{_includedir}/hybris/hwcomposerwindow
 %{_libdir}/libhybris-hwcomposerwindow.so
 %{_libdir}/pkgconfig/hwcomposer-egl.pc
 
@@ -378,7 +387,7 @@ rm %{buildroot}/%{_libdir}/*.la %{buildroot}/%{_libdir}/libhybris/*.la
 %files libGLESv1-devel
 %defattr(-,root,root,-)
 %{_libdir}/libGLESv1_CM.so
-%{_includedir}/GLES/*.h
+%{_includedir}/GLES
 %{_libdir}/pkgconfig/glesv1_cm.pc
 
 %files libGLESv2
@@ -387,7 +396,7 @@ rm %{buildroot}/%{_libdir}/*.la %{buildroot}/%{_libdir}/libhybris/*.la
 
 %files libGLESv2-devel
 %defattr(-,root,root,-)
-%{_includedir}/GLES2/*.h
+%{_includedir}/GLES2
 %{_libdir}/libGLESv2.so
 %{_libdir}/pkgconfig/glesv2.pc
 
@@ -397,8 +406,7 @@ rm %{buildroot}/%{_libdir}/*.la %{buildroot}/%{_libdir}/libhybris/*.la
 
 %files libOpenCL-devel
 %defattr(-,root,root,-)
-%{_includedir}/CL/*.h
-%{_includedir}/CL/*.hpp
+%{_includedir}/CL
 %{_libdir}/libOpenCL.so
 %{_libdir}/pkgconfig/OpenCL.pc
 
@@ -408,7 +416,7 @@ rm %{buildroot}/%{_libdir}/*.la %{buildroot}/%{_libdir}/libhybris/*.la
 
 %files libOpenVG-devel
 %defattr(-,root,root,-)
-%{_includedir}/VG/*.h
+%{_includedir}/VG
 
 %files libwayland-egl
 %defattr(-,root,root,-)
@@ -497,3 +505,7 @@ rm %{buildroot}/%{_libdir}/*.la %{buildroot}/%{_libdir}/libhybris/*.la
 %{_bindir}/test_media
 %{_bindir}/test_recorder
 %{_bindir}/test_sf
+
+%files doc
+%defattr(-,root,root,-)
+%{_docdir}/%{name}-%{version}
