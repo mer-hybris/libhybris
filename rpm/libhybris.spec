@@ -223,6 +223,26 @@ Requires: %{name}-libvibrator = %{version}-%{release}
 %description libvibrator-devel
 %{summary}.
 
+%package libsf
+Summary: SurfaceFlinger support helpers for %{name}
+Requires(post): /sbin/ldconfig
+Requires(postun): /sbin/ldconfig
+Requires: %{name} = %{version}-%{release}
+
+%description libsf
+%{summary}.
+
+%package libsf-devel
+Summary: SurfaceFlinger support development library for %{name}
+Requires(post): /sbin/ldconfig
+Requires(postun): /sbin/ldconfig
+Requires: %{name} = %{version}-%{release}
+Requires: %{name}-libsf = %{version}-%{release}
+Provides: libsf-devel
+
+%description libsf-devel
+%{summary}.
+
 %package tests
 Summary: Tests for %{name}
 Requires: %{name} = %{version}-%{release}
@@ -248,6 +268,19 @@ Requires: %{name}-libsync = %{version}-%{release}
 %description tests-upstream
 %{summary}.
 
+%package tests-upstream-devel
+Summary: Tests from upstream %{name} but not working on our side, development files
+Requires(post): /sbin/ldconfig
+Requires(postun): /sbin/ldconfig
+Requires: %{name} = %{version}-%{release}
+Requires: %{name}-libEGL = %{version}-%{release}
+Requires: %{name}-libGLESv2 = %{version}-%{release}
+Requires: %{name}-libhardware = %{version}-%{release}
+Requires: %{name}-libsync = %{version}-%{release}
+
+%description tests-upstream-devel
+%{summary}.
+
 %package doc
 Summary:   Documentation for %{name}
 Group:     Documentation
@@ -264,9 +297,16 @@ cd hybris
 autoreconf -v -f -i
 %configure \
   --enable-wayland \
-  %{!?qa_stage_devel:--enable-debug} \
-  %{!?qa_stage_devel:--enable-trace} \
+  %{?qa_stage_devel:--enable-debug} \
+  %{?qa_stage_devel:--enable-trace} \
+%ifarch %{arm}
+  %{?qa_stage_devel:--enable-arm-tracing} \
+%endif
+%if 0%{?android_headers:1}
+  --with-android-headers=%{android_headers} \
+%else
   --with-android-headers=/usr/lib/droid-devel/droid-headers \
+%endif
   --enable-property-cache \
 %ifarch %{arm}
   --enable-arch=arm \
@@ -276,10 +316,11 @@ autoreconf -v -f -i
 %endif
 %ifarch %{aarch64}
   --enable-arch=arm64 \
-  --with-default-hybris-ld-library-path=/usr/libexec/droid-hybris/system/lib64:/vendor/lib64:/system/lib64:/odm/lib64
+  --with-default-hybris-ld-library-path=/usr/libexec/droid-hybris/system/lib64:/vendor/lib64:/system/lib64:/odm/lib64 \
 %else
-  --with-default-hybris-ld-library-path=/usr/libexec/droid-hybris/system/lib:/vendor/lib:/system/lib:/odm/lib
+  --with-default-hybris-ld-library-path=/usr/libexec/droid-hybris/system/lib:/vendor/lib:/system/lib:/odm/lib \
 %endif
+  --enable-silent-rules
 
 make
 
@@ -324,8 +365,14 @@ install -m0644 AUTHORS %{buildroot}%{_docdir}/%{name}-%{version}
 %post libvibrator -p /sbin/ldconfig
 %postun libvibrator -p /sbin/ldconfig
 
+%post libsf -p /sbin/ldconfig
+%postun libsf -p /sbin/ldconfig
+
 %post tests-upstream -p /sbin/ldconfig
 %postun tests-upstream -p /sbin/ldconfig
+
+%post tests-upstream-devel -p /sbin/ldconfig
+%postun tests-upstream-devel -p /sbin/ldconfig
 
 %files
 %defattr(-,root,root,-)
@@ -333,6 +380,12 @@ install -m0644 AUTHORS %{buildroot}%{_docdir}/%{name}-%{version}
 %dir %{_libdir}/libhybris
 %{_libdir}/libhybris-common.so.*
 %{_libdir}/libandroid-properties.so.*
+%{_libdir}/libgralloc.so
+%{_libdir}/libgralloc.so.1
+%{_libdir}/libgralloc.so.1.0.0
+%{_libdir}/libhwc2.so
+%{_libdir}/libhwc2.so.1
+%{_libdir}/libhwc2.so.1.0.0
 %{_bindir}/getprop
 %{_bindir}/setprop
 %{_libdir}/libhybris/linker/*.la
@@ -348,6 +401,7 @@ install -m0644 AUTHORS %{buildroot}%{_docdir}/%{name}-%{version}
 %{_includedir}/hybris/dlfcn
 %{_includedir}/hybris/common
 %{_libdir}/libhybris-common.so
+%{_libdir}/pkgconfig/libgralloc.pc
 %{_libdir}/libandroid-properties.so
 %{_libdir}/pkgconfig/libandroid-properties.pc
 %{_includedir}/hybris/camera
@@ -356,6 +410,8 @@ install -m0644 AUTHORS %{buildroot}%{_docdir}/%{name}-%{version}
 %{_includedir}/hybris/media
 %{_libdir}/libwifi.so
 %{_libdir}/pkgconfig/libwifi.pc
+%{_includedir}/hybris/hwc2/hwc2_compatibility_layer.h
+%{_libdir}/pkgconfig/libhwc2.pc
 
 %files libEGL
 %defattr(-,root,root,-)
@@ -464,6 +520,16 @@ install -m0644 AUTHORS %{buildroot}%{_docdir}/%{name}-%{version}
 %{_libdir}/libvibrator.so
 %{_libdir}/pkgconfig/libvibrator.pc
 
+%files libsf
+%defattr(-,root,root-)
+%{_libdir}/libsf.so.1
+%{_libdir}/libsf.so.1.0.0
+
+%files libsf-devel
+%defattr(-,root,root,-)
+%{_libdir}/libsf.so
+%{_libdir}/pkgconfig/libsf.pc
+
 %files tests
 %defattr(-,root,root,-)
 %{_bindir}/test_audio
@@ -478,26 +544,16 @@ install -m0644 AUTHORS %{buildroot}%{_docdir}/%{name}-%{version}
 %{_bindir}/test_sensors
 %{_bindir}/test_vibrator
 %{_bindir}/test_wifi
+%{_bindir}/test_hwc2
 
 %files tests-upstream
 %defattr(-,root,root,-)
-%{_libdir}/libcamera.so
-%{_libdir}/libis.so
-%{_libdir}/libmedia.so
-%{_libdir}/libsf.so
-%{_libdir}/libui.so
-%{_libdir}/pkgconfig/libcamera.pc
-%{_libdir}/pkgconfig/libis.pc
-%{_libdir}/pkgconfig/libmedia.pc
-%{_libdir}/pkgconfig/libsf.pc
 %{_libdir}/libcamera.so.1
 %{_libdir}/libcamera.so.1.0.0
 %{_libdir}/libis.so.1
 %{_libdir}/libis.so.1.0.0
 %{_libdir}/libmedia.so.1
 %{_libdir}/libmedia.so.1.0.0
-%{_libdir}/libsf.so.1
-%{_libdir}/libsf.so.1.0.0
 %{_libdir}/libui.so.1
 %{_libdir}/libui.so.1.0.0
 %{_bindir}/test_camera
@@ -505,6 +561,15 @@ install -m0644 AUTHORS %{buildroot}%{_docdir}/%{name}-%{version}
 %{_bindir}/test_media
 %{_bindir}/test_recorder
 %{_bindir}/test_sf
+
+%files tests-upstream-devel
+%{_libdir}/libcamera.so
+%{_libdir}/libis.so
+%{_libdir}/libmedia.so
+%{_libdir}/libui.so
+%{_libdir}/pkgconfig/libcamera.pc
+%{_libdir}/pkgconfig/libis.pc
+%{_libdir}/pkgconfig/libmedia.pc
 
 %files doc
 %defattr(-,root,root,-)
