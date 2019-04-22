@@ -297,10 +297,10 @@ cd hybris
 autoreconf -v -f -i
 %configure \
   --enable-wayland \
-  %{?qa_stage_devel:--enable-debug} \
-  %{?qa_stage_devel:--enable-trace} \
+  --enable-debug \
+  --enable-trace \
 %ifarch %{arm}
-  %{?qa_stage_devel:--enable-arm-tracing} \
+  --enable-arm-tracing \
 %endif
 %if 0%{?android_headers:1}
   --with-android-headers=%{android_headers} \
@@ -316,9 +316,9 @@ autoreconf -v -f -i
 %endif
 %ifarch %{aarch64}
   --enable-arch=arm64 \
-  --with-default-hybris-ld-library-path=/usr/libexec/droid-hybris/system/lib64:/vendor/lib64:/system/lib64:/odm/lib64 \
+  --with-default-hybris-ld-library-path=/usr/libexec/droid-hybris/system/lib64:/vendor/lib64/egl:/vendor/lib64:/system/lib64:/odm/lib64 \
 %else
-  --with-default-hybris-ld-library-path=/usr/libexec/droid-hybris/system/lib:/vendor/lib:/system/lib:/odm/lib \
+  --with-default-hybris-ld-library-path=/usr/libexec/droid-hybris/system/lib:/vendor/lib/egl:/vendor/lib:/system/lib:/odm/lib \
 %endif
   --enable-silent-rules
 
