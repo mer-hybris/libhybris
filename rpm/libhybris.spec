@@ -2,11 +2,12 @@ Name:      libhybris
 Version:   0.0.0
 Release:   1%{?dist}
 Summary:   Utilize Bionic-based HW adaptations on glibc systems
-License:   ASL 2.0
+License:   ASL 2.0 and BSD and ISC and LGPLv2 and MIT
 URL:       https://github.com/libhybris/libhybris
 Source:    %{name}-%{version}.tar.bz2
 BuildRequires: libtool
 BuildRequires: pkgconfig(wayland-client)
+BuildRequires: vulkan-headers
 # When droid-hal-ha builds for a specific HA it should provide
 # droid-hal-devel via droid-hal-%%{device}-devel package
 BuildRequires: droid-hal-devel
@@ -108,26 +109,6 @@ Requires: %{name}-devel = %{version}-%{release}
 Provides: libOpenCL-devel
 
 %description libOpenCL-devel
-%{summary}.
-
-%package libOpenVG
-Summary: OpenVG for %{name}
-Requires: %{name} = %{version}-%{release}
-Requires(post): /sbin/ldconfig
-Requires(postun): /sbin/ldconfig
-Provides: libOpenVG
-
-%description libOpenVG
-%{summary}.
-
-%package libOpenVG-devel
-Summary: OpenVG development library for %{name}
-Requires: %{name} = %{version}-%{release}
-Requires: %{name}-libOpenVG = %{version}-%{release}
-Requires: %{name}-devel = %{version}-%{release}
-Provides: libOpenVG-devel
-
-%description libOpenVG-devel
 %{summary}.
 
 %package libwayland-egl
@@ -236,6 +217,17 @@ Provides: libsf-devel
 %description libsf-devel
 %{summary}.
 
+%package libvulkan
+Summary: Vulkan support helpers for %{name}
+Requires(post): /sbin/ldconfig
+Requires(postun): /sbin/ldconfig
+Requires: %{name} = %{version}-%{release}
+Provides: vulkan
+Obsoletes: vulkan-loader
+
+%description libvulkan
+%{summary}.
+
 %package tests
 Summary: Tests for %{name}
 Requires: %{name} = %{version}-%{release}
@@ -244,6 +236,7 @@ Requires: %{name}-libGLESv2 = %{version}-%{release}
 Requires: %{name}-libhardware = %{version}-%{release}
 Requires: %{name}-libsync = %{version}-%{release}
 Requires: %{name}-libvibrator = %{version}-%{release}
+Requires: %{name}-libvulkan = %{version}-%{release}
 
 %description tests
 %{summary}.
@@ -313,6 +306,8 @@ make install DESTDIR=$RPM_BUILD_ROOT
 
 # Remove the static libraries.
 rm -f %{buildroot}/%{_libdir}/*.la %{buildroot}/%{_libdir}/libhybris/*.la
+# Remove unneeded library symlink
+rm -f %{buildroot}/%{_libdir}/libhybris-vulkanplatformcommon.so %{buildroot}/%{_libdir}/libvulkan.so
 
 mkdir -p %{buildroot}%{_docdir}/%{name}-%{version}
 install -m0644 AUTHORS %{buildroot}%{_docdir}/%{name}-%{version}
@@ -350,6 +345,9 @@ install -m0644 AUTHORS %{buildroot}%{_docdir}/%{name}-%{version}
 %post libsf -p /sbin/ldconfig
 %postun libsf -p /sbin/ldconfig
 
+%post libvulkan -p /sbin/ldconfig
+%postun libvulkan -p /sbin/ldconfig
+
 %post tests-upstream -p /sbin/ldconfig
 %postun tests-upstream -p /sbin/ldconfig
 
@@ -358,9 +356,10 @@ install -m0644 AUTHORS %{buildroot}%{_docdir}/%{name}-%{version}
 
 %files
 %defattr(-,root,root,-)
-%license hybris/COPYING
+%license LICENSE.Apache2 LICENSE.BSD-2 LICENSE.BSD-3 LICENSE.BSD-4 LICENSE.ISC LICENSE.LGPLv21 LICENSE.MIT
 %dir %{_libdir}/libhybris
 %{_libdir}/libhybris-common.so.*
+%{_libdir}/libhybris-platformcommon.so.*
 %{_libdir}/libandroid-properties.so.*
 %{_libdir}/libgralloc.so.*
 %{_libdir}/libhwc2.so.*
@@ -377,7 +376,9 @@ install -m0644 AUTHORS %{buildroot}%{_docdir}/%{name}-%{version}
 %{_includedir}/hybris/properties
 %{_includedir}/hybris/dlfcn
 %{_includedir}/hybris/common
+%{_includedir}/hybris/platformcommon
 %{_libdir}/libhybris-common.so
+%{_libdir}/libhybris-platformcommon.so
 %{_libdir}/pkgconfig/libgralloc.pc
 %{_libdir}/libandroid-properties.so
 %{_libdir}/pkgconfig/libandroid-properties.pc
@@ -445,14 +446,6 @@ install -m0644 AUTHORS %{buildroot}%{_docdir}/%{name}-%{version}
 %{_libdir}/libOpenCL.so
 %{_libdir}/pkgconfig/OpenCL.pc
 
-%files libOpenVG
-%defattr(-,root,root,-)
-# We don't have implementation of OpenVG atm.
-
-%files libOpenVG-devel
-%defattr(-,root,root,-)
-%{_includedir}/VG
-
 %files libwayland-egl
 %defattr(-,root,root,-)
 %{_libdir}/libhybris/eglplatform_wayland.so
@@ -502,6 +495,13 @@ install -m0644 AUTHORS %{buildroot}%{_docdir}/%{name}-%{version}
 %{_libdir}/libsf.so
 %{_libdir}/pkgconfig/libsf.pc
 
+%files libvulkan
+%defattr(-,root,root,-)
+%{_libdir}/libvulkan.so.*
+%{_libdir}/libhybris-vulkanplatformcommon.so.*
+%{_libdir}/libhybris/vulkanplatform_null.so
+%{_libdir}/libhybris/vulkanplatform_wayland.so
+
 %files tests
 %defattr(-,root,root,-)
 %{_bindir}/test_audio
@@ -517,6 +517,7 @@ install -m0644 AUTHORS %{buildroot}%{_docdir}/%{name}-%{version}
 %{_bindir}/test_opencl
 %{_bindir}/test_sensors
 %{_bindir}/test_vibrator
+%{_bindir}/test_vulkan
 %{_bindir}/test_wifi
 
 %files tests-upstream
