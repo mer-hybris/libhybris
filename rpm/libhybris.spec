@@ -10,7 +10,7 @@ Source:    %{name}-%{version}.tar.bz2
 BuildRequires: libtool
 BuildRequires: pkgconfig(wayland-client)
 # When droid-hal-ha builds for a specific HA it should provide
-# droid-hal-devel via droid-hal-%{device}-devel package
+# droid-hal-devel via droid-hal-%%{device}-devel package
 BuildRequires: droid-hal-devel
 Conflicts: mesa-llvmpipe
 
@@ -31,7 +31,6 @@ Requires: %{name}-libhardware = %{version}-%{release}
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
 Provides: libEGL
-Provides: libEGL.so.1
 
 %description libEGL
 %{summary}.
@@ -53,7 +52,6 @@ Requires: %{name} = %{version}-%{release}
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
 Provides: libGLESv1
-Provides: libGLES_CM.so.1
 
 %description libGLESv1
 %{summary}.
@@ -74,7 +72,6 @@ Requires: %{name} = %{version}-%{release}
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
 Provides: libGLESv2
-Provides: libGLESv2.so.2
 
 %description libGLESv2
 %{summary}.
@@ -135,18 +132,10 @@ Requires: %{name} = %{version}-%{release}
 Requires: %{name}-libhardware = %{version}-%{release}
 Requires: %{name}-libEGL = %{version}-%{release}
 Requires: %{name}-libsync = %{version}-%{release}
-Provides: libwayland-egl
+BuildRequires: pkgconfig(wayland-egl)
+Requires: wayland-egl
 
 %description libwayland-egl
-%{summary}.
-
-%package libwayland-egl-devel
-Summary: Wayland EGL development library for %{name}
-Requires: %{name} = %{version}-%{release}
-Requires: %{name}-libwayland-egl = %{version}-%{release}
-Provides: libwayland-egl-devel
-
-%description libwayland-egl-devel
 %{summary}.
 
 %package libhardware
@@ -273,10 +262,7 @@ Summary: Tests from upstream %{name} but not working on our side, development fi
 Requires(post): /sbin/ldconfig
 Requires(postun): /sbin/ldconfig
 Requires: %{name} = %{version}-%{release}
-Requires: %{name}-libEGL = %{version}-%{release}
-Requires: %{name}-libGLESv2 = %{version}-%{release}
-Requires: %{name}-libhardware = %{version}-%{release}
-Requires: %{name}-libsync = %{version}-%{release}
+Requires: %{name}-tests-upstream = %{version}-%{release}
 
 %description tests-upstream-devel
 %{summary}.
@@ -380,18 +366,13 @@ install -m0644 AUTHORS %{buildroot}%{_docdir}/%{name}-%{version}
 %dir %{_libdir}/libhybris
 %{_libdir}/libhybris-common.so.*
 %{_libdir}/libandroid-properties.so.*
-%{_libdir}/libgralloc.so
-%{_libdir}/libgralloc.so.1
-%{_libdir}/libgralloc.so.1.0.0
-%{_libdir}/libhwc2.so
-%{_libdir}/libhwc2.so.1
-%{_libdir}/libhwc2.so.1.0.0
+%{_libdir}/libgralloc.so.*
+%{_libdir}/libhwc2.so.*
 %{_bindir}/getprop
 %{_bindir}/setprop
 %{_libdir}/libhybris/linker/*.la
 %{_libdir}/libhybris/linker/*.so
-%{_libdir}/libwifi.so.1
-%{_libdir}/libwifi.so.1.0.0
+%{_libdir}/libwifi.so.*
 
 %files devel
 %defattr(-,root,root,-)
@@ -408,6 +389,8 @@ install -m0644 AUTHORS %{buildroot}%{_docdir}/%{name}-%{version}
 %{_includedir}/hybris/surface_flinger
 %{_includedir}/hybris/ui
 %{_includedir}/hybris/media
+%{_libdir}/libgralloc.so
+%{_libdir}/libhwc2.so
 %{_libdir}/libwifi.so
 %{_libdir}/pkgconfig/libwifi.pc
 %{_includedir}/hybris/hwc2/hwc2_compatibility_layer.h
@@ -420,8 +403,7 @@ install -m0644 AUTHORS %{buildroot}%{_docdir}/%{name}-%{version}
 %{_libdir}/libhybris/eglplatform_fbdev.so
 %{_libdir}/libhybris/eglplatform_null.so
 %{_libdir}/libhybris/eglplatform_hwcomposer.so
-%{_libdir}/libhybris-hwcomposerwindow.so.1
-%{_libdir}/libhybris-hwcomposerwindow.so.1.0.0
+%{_libdir}/libhybris-hwcomposerwindow.so.*
 
 %files libEGL-devel
 %defattr(-,root,root,-)
@@ -453,6 +435,7 @@ install -m0644 AUTHORS %{buildroot}%{_docdir}/%{name}-%{version}
 %files libGLESv2-devel
 %defattr(-,root,root,-)
 %{_includedir}/GLES2
+%{_includedir}/GLES3
 %{_libdir}/libGLESv2.so
 %{_libdir}/pkgconfig/glesv2.pc
 
@@ -477,12 +460,6 @@ install -m0644 AUTHORS %{buildroot}%{_docdir}/%{name}-%{version}
 %files libwayland-egl
 %defattr(-,root,root,-)
 %{_libdir}/libhybris/eglplatform_wayland.so
-%{_libdir}/libwayland-egl.so.*
-
-%files libwayland-egl-devel
-%defattr(-,root,root,-)
-%{_libdir}/libwayland-egl.so
-%{_libdir}/pkgconfig/wayland-egl.pc
 
 %files libhardware
 %defattr(-,root,root,-)
@@ -522,8 +499,7 @@ install -m0644 AUTHORS %{buildroot}%{_docdir}/%{name}-%{version}
 
 %files libsf
 %defattr(-,root,root-)
-%{_libdir}/libsf.so.1
-%{_libdir}/libsf.so.1.0.0
+%{_libdir}/libsf.so.*
 
 %files libsf-devel
 %defattr(-,root,root,-)
@@ -536,6 +512,7 @@ install -m0644 AUTHORS %{buildroot}%{_docdir}/%{name}-%{version}
 %{_bindir}/test_egl
 %{_bindir}/test_egl_configs
 %{_bindir}/test_glesv2
+%{_bindir}/test_glesv3
 %{_bindir}/test_gps
 %{_bindir}/test_hwcomposer
 %{_bindir}/test_lights
@@ -544,18 +521,13 @@ install -m0644 AUTHORS %{buildroot}%{_docdir}/%{name}-%{version}
 %{_bindir}/test_sensors
 %{_bindir}/test_vibrator
 %{_bindir}/test_wifi
-%{_bindir}/test_hwc2
 
 %files tests-upstream
 %defattr(-,root,root,-)
-%{_libdir}/libcamera.so.1
-%{_libdir}/libcamera.so.1.0.0
-%{_libdir}/libis.so.1
-%{_libdir}/libis.so.1.0.0
-%{_libdir}/libmedia.so.1
-%{_libdir}/libmedia.so.1.0.0
-%{_libdir}/libui.so.1
-%{_libdir}/libui.so.1.0.0
+%{_libdir}/libcamera.so.*
+%{_libdir}/libis.so.*
+%{_libdir}/libmedia.so.*
+%{_libdir}/libui.so.*
 %{_bindir}/test_camera
 %{_bindir}/test_input
 %{_bindir}/test_media
