@@ -291,7 +291,7 @@ autoreconf -v -f -i
 %if 0%{?android_headers:1}
   --with-android-headers=%{android_headers} \
 %else
-  --with-android-headers=/usr/lib/droid-devel/droid-headers \
+  --with-android-headers=%{_libdir}/droid-devel/droid-headers \
 %endif
   --enable-property-cache \
 %ifarch %{arm}
@@ -300,7 +300,7 @@ autoreconf -v -f -i
 %ifarch %{ix86}
   --enable-arch=x86 \
 %endif
-%ifarch %{aarch64}
+%ifarch aarch64
   --enable-arch=arm64 \
   --with-default-hybris-ld-library-path=/usr/libexec/droid-hybris/system/lib64:/vendor/lib64:/system/lib64:/odm/lib64 \
 %else
