@@ -290,11 +290,6 @@ cd hybris
 %ifarch %{arm}
   %{?qa_stage_devel:--enable-arm-tracing} \
 %endif
-%if 0%{?android_headers:1}
-  --with-android-headers=%{android_headers} \
-%else
-  --with-android-headers=%{_libdir}/droid-devel/droid-headers \
-%endif
   --enable-property-cache \
 %ifarch %{arm}
   --enable-arch=arm \
