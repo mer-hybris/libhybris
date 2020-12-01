@@ -505,6 +505,7 @@ install -m0644 AUTHORS %{buildroot}%{_docdir}/%{name}-%{version}
 %files tests
 %defattr(-,root,root,-)
 %{_bindir}/test_audio
+%{_bindir}/test_dlopen
 %{_bindir}/test_egl
 %{_bindir}/test_egl_configs
 %{_bindir}/test_glesv2
