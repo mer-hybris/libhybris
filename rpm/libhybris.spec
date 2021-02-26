@@ -287,7 +287,7 @@ cd hybris
   --enable-wayland \
   %{?qa_stage_devel:--enable-debug} \
   %{?qa_stage_devel:--enable-trace} \
-%ifarch %{arm}
+%ifnarch %{ix86}
   %{?qa_stage_devel:--enable-arm-tracing} \
 %endif
   --enable-property-cache \
