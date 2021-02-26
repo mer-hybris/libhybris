@@ -287,7 +287,7 @@ cd hybris
   --enable-wayland \
   %{?qa_stage_devel:--enable-debug} \
   %{?qa_stage_devel:--enable-trace} \
-%ifarch %{arm}
+%ifnarch %{ix86}
   %{?qa_stage_devel:--enable-arm-tracing} \
 %endif
   --enable-property-cache \
@@ -299,9 +299,9 @@ cd hybris
 %endif
 %ifarch aarch64
   --enable-arch=arm64 \
-  --with-default-hybris-ld-library-path=/usr/libexec/droid-hybris/system/lib64:/vendor/lib64:/system/lib64:/odm/lib64 \
+  --with-default-hybris-ld-library-path=/usr/libexec/droid-hybris/system/lib64:/vendor/lib64:/system/lib64:/odm/lib64:/odm/lib64/egl \
 %else
-  --with-default-hybris-ld-library-path=/usr/libexec/droid-hybris/system/lib:/vendor/lib:/system/lib:/odm/lib \
+  --with-default-hybris-ld-library-path=/usr/libexec/droid-hybris/system/lib:/vendor/lib:/system/lib:/odm/lib:/odm/lib/egl \
 %endif
   --enable-silent-rules
 
