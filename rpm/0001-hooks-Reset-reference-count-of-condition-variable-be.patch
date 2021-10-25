@@ -1,0 +1,34 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Matti=20Lehtim=C3=A4ki?= <matti.lehtimaki@jolla.com>
+Date: Wed, 20 Oct 2021 15:17:26 +0000
+Subject: [PATCH] hooks: Reset reference count of condition variable before
+ pthread_cond_destroy.
+
+Bionic and glibc implementations of pthread_cond_destroy are different.
+Bionic implementation is trivial and does not block whereas the glibc
+implementation requires that there is no thread waiting for the condition
+variable when it is destroyed and bionic code does not always follow this
+requirement which can cause a deadlock because two or more threads
+are waiting for the same condition variable.
+---
+ hybris/common/hooks.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/hybris/common/hooks.c b/hybris/common/hooks.c
+index a35fe44066b4c462da6768395e459b00ecb6abf7..7183fc1953bf3f89d9ac98bcdecbde9498cb2ea8 100644
+--- a/hybris/common/hooks.c
++++ b/hybris/common/hooks.c
+@@ -905,6 +905,13 @@ static int _hybris_hook_pthread_cond_destroy(pthread_cond_t *cond)
+     }
+ 
+     if (!hybris_is_pointer_in_shm((void*)realcond)) {
++        /* Bionic and glibc implementations of pthread_cond_destroy are different.
++         * Bionic implementation does not block whereas the glibc implementation
++         * requires that there are no threads waiting for the condition variable
++         * when it is destroyed and bionic code does not always follow this
++         * requirement. To prevent deadlocks reset the reference count of the
++         * condition variable. */
++        realcond->__data.__wrefs = 0;
+         ret = pthread_cond_destroy(realcond);
+         free(realcond);
+     }

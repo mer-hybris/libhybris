@@ -5,6 +5,9 @@ Summary:   Utilize Bionic-based HW adaptations on glibc systems
 License:   ASL 2.0
 URL:       https://github.com/libhybris/libhybris
 Source:    %{name}-%{version}.tar.bz2
+
+Patch1:    0001-hooks-Reset-reference-count-of-condition-variable-be.patch
+
 BuildRequires: libtool
 BuildRequires: pkgconfig(wayland-client)
 # When droid-hal-ha builds for a specific HA it should provide
@@ -279,7 +282,7 @@ Requires:  %{name} = %{version}-%{release}
 %{summary}.
 
 %prep
-%autosetup -n %{name}-%{version}/%{name}
+%autosetup -p1 -n %{name}-%{version}/%{name}
 
 %build
 cd hybris
