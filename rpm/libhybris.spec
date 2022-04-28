@@ -5,7 +5,7 @@ Summary:   Utilize Bionic-based HW adaptations on glibc systems
 License:   ASL 2.0 and BSD and ISC and LGPLv2 and MIT
 URL:       https://github.com/libhybris/libhybris
 Source:    %{name}-%{version}.tar.bz2
-BuildRequires: libtool
+BuildRequires: meson
 BuildRequires: pkgconfig(wayland-client)
 BuildRequires: vulkan-headers
 # When droid-hal-ha builds for a specific HA it should provide
@@ -278,36 +278,35 @@ Requires:  %{name} = %{version}-%{release}
 
 %build
 cd hybris
-%reconfigure \
-  --enable-wayland \
-  %{?qa_stage_devel:--enable-debug} \
-  %{?qa_stage_devel:--enable-trace} \
-%ifnarch %{ix86}
-  %{?qa_stage_devel:--enable-arm-tracing} \
-%endif
-  --enable-property-cache \
+%meson \
 %ifarch %{arm}
-  --enable-arch=arm \
+  -Darch=arm \
 %endif
 %ifarch %{ix86}
-  --enable-arch=x86 \
+  -Darch=x86 \
 %endif
 %ifarch aarch64
-  --enable-arch=arm64 \
-  --with-default-hybris-ld-library-path=/usr/libexec/droid-hybris/system/lib64:/vendor/lib64:/system/lib64:/odm/lib64 \
+  -Darch=arm64 \
+  -Ddefault_hybris_ld_library_path=/usr/libexec/droid-hybris/system/lib64:/vendor/lib64:/system/lib64:/odm/lib64 \
 %else
-  --with-default-hybris-ld-library-path=/usr/libexec/droid-hybris/system/lib:/vendor/lib:/system/lib:/odm/lib \
+  -Ddefault_hybris_ld_library_path=/usr/libexec/droid-hybris/system/lib:/vendor/lib:/system/lib:/odm/lib \
 %endif
-  --enable-silent-rules
+  %{?qa_stage_devel:-Denable_debug=true} \
+  %{?qa_stage_devel:-Denable_trace=true} \
+%ifnarch %{ix86}
+  %{?qa_stage_devel:-Darm_tracing=true} \
+%endif
+  -Dproperty_cache=true \
+  -Dwayland=true
 
-%make_build
+%meson_build
 
 %install
 cd hybris
-make install DESTDIR=$RPM_BUILD_ROOT
+%meson_install
 
 # Remove the static libraries.
-rm -f %{buildroot}/%{_libdir}/*.la %{buildroot}/%{_libdir}/libhybris/*.la
+rm -f %{buildroot}/%{_libdir}/*.a %{buildroot}/%{_libdir}/libhybris/*.a
 # Remove unneeded library symlink
 rm -f %{buildroot}/%{_libdir}/libhybris-vulkanplatformcommon.so %{buildroot}/%{_libdir}/libvulkan.so
 
@@ -367,7 +366,7 @@ install -m0644 AUTHORS %{buildroot}%{_docdir}/%{name}-%{version}
 %{_libdir}/libhwc2.so.*
 %{_bindir}/getprop
 %{_bindir}/setprop
-%{_libdir}/libhybris/linker/*.la
+%{_libdir}/libhybris/linker/*.a
 %{_libdir}/libhybris/linker/*.so
 %{_libdir}/libwifi.so.*
 
