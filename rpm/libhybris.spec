@@ -12,6 +12,7 @@ BuildRequires: vulkan-headers
 # droid-hal-devel via droid-hal-%%{device}-devel package
 BuildRequires: droid-hal-devel
 Conflicts: mesa-llvmpipe
+Obsoletes: libhybris-libOpenVG <= 0.0.5.44
 
 %description
 %{summary}.
@@ -19,6 +20,7 @@ Conflicts: mesa-llvmpipe
 %package devel
 Summary: Common development headers for %{name}
 Requires: %{name} = %{version}-%{release}
+Obsoletes: libhybris-libOpenVG-devel <= 0.0.5.44
 
 %description devel
 %{summary}.
