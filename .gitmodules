@@ -1,3 +1,3 @@
 [submodule "libhybris"]
 	path = libhybris
-	url = https://github.com/libhybris/libhybris
+	url = https://github.com/sailfishos-mirror/libhybris.git
