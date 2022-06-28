@@ -3,7 +3,7 @@ Version:   0.0.0
 Release:   1%{?dist}
 Summary:   Utilize Bionic-based HW adaptations on glibc systems
 License:   ASL 2.0
-URL:       https://github.com/libhybris/libhybris
+URL:       https://github.com/mer-hybris/libhybris
 Source:    %{name}-%{version}.tar.bz2
 BuildRequires: libtool
 BuildRequires: pkgconfig(wayland-client)
