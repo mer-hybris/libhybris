@@ -369,6 +369,7 @@ install -m0644 AUTHORS %{buildroot}%{_docdir}/%{name}-%{version}
 %{_bindir}/setprop
 %{_libdir}/libhybris/linker/*.la
 %{_libdir}/libhybris/linker/*.so
+%{_libdir}/libui.so.*
 %{_libdir}/libwifi.so.*
 
 %files devel
@@ -390,6 +391,7 @@ install -m0644 AUTHORS %{buildroot}%{_docdir}/%{name}-%{version}
 %{_includedir}/hybris/media
 %{_libdir}/libgralloc.so
 %{_libdir}/libhwc2.so
+%{_libdir}/libui.so
 %{_libdir}/libwifi.so
 %{_libdir}/pkgconfig/libwifi.pc
 %{_includedir}/hybris/hwc2/hwc2_compatibility_layer.h
@@ -527,7 +529,6 @@ install -m0644 AUTHORS %{buildroot}%{_docdir}/%{name}-%{version}
 %{_libdir}/libcamera.so.*
 %{_libdir}/libis.so.*
 %{_libdir}/libmedia.so.*
-%{_libdir}/libui.so.*
 %{_bindir}/test_camera
 %{_bindir}/test_input
 %{_bindir}/test_media
@@ -538,7 +539,6 @@ install -m0644 AUTHORS %{buildroot}%{_docdir}/%{name}-%{version}
 %{_libdir}/libcamera.so
 %{_libdir}/libis.so
 %{_libdir}/libmedia.so
-%{_libdir}/libui.so
 %{_libdir}/pkgconfig/libcamera.pc
 %{_libdir}/pkgconfig/libis.pc
 %{_libdir}/pkgconfig/libmedia.pc
