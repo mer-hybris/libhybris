@@ -15,6 +15,7 @@ Summary:   Utilize Bionic-based HW adaptations on glibc systems
 License:   ASL 2.0 and BSD and ISC and LGPLv2 and MIT
 URL:       https://github.com/mer-hybris/libhybris
 Source:    %{name}-%{version}.tar.bz2
+Patch0:    0001-Revert-hybris-common-n-Fix-loading-namespaces-for-no.patch
 BuildRequires: libtool
 BuildRequires: pkgconfig(wayland-client)
 BuildRequires: vulkan-headers
@@ -284,7 +285,7 @@ Requires:  %{name} = %{version}-%{release}
 %{summary}.
 
 %prep
-%autosetup -n %{name}-%{version}/%{name}
+%autosetup -p1 -n %{name}-%{version}/%{name}
 
 %build
 cd hybris
