@@ -304,7 +304,7 @@ cd hybris
 
 %install
 cd hybris
-make install DESTDIR=$RPM_BUILD_ROOT
+%make_install
 
 # Remove the static libraries.
 rm -f %{buildroot}/%{_libdir}/*.la %{buildroot}/%{_libdir}/libhybris/*.la
@@ -360,7 +360,6 @@ find -H "$RPM_BUILD_ROOT" -name "*.la" -a \( -type f -o -type l \) -delete
 %postun tests-upstream-devel -p /sbin/ldconfig
 
 %files
-%defattr(-,root,root,-)
 %license LICENSE.Apache2 LICENSE.BSD-2 LICENSE.BSD-3 LICENSE.BSD-4 LICENSE.ISC LICENSE.LGPLv21 LICENSE.MIT
 %dir %{_libdir}/libhybris
 %{_libdir}/libhybris-common.so.*
@@ -375,7 +374,6 @@ find -H "$RPM_BUILD_ROOT" -name "*.la" -a \( -type f -o -type l \) -delete
 %{_libdir}/libwifi.so.*
 
 %files devel
-%defattr(-,root,root,-)
 %dir %{_includedir}/hybris
 %{_includedir}/hybris/input
 %{_includedir}/hybris/properties
@@ -409,7 +407,6 @@ find -H "$RPM_BUILD_ROOT" -name "*.la" -a \( -type f -o -type l \) -delete
 %{_libdir}/libhybris-hwcomposerwindow.so.*
 
 %files libEGL-devel
-%defattr(-,root,root,-)
 %{_includedir}/KHR
 %{_includedir}/EGL
 %{_includedir}/hybris/eglplatformcommon
@@ -422,94 +419,75 @@ find -H "$RPM_BUILD_ROOT" -name "*.la" -a \( -type f -o -type l \) -delete
 %{_libdir}/pkgconfig/hwcomposer-egl.pc
 
 %files libGLESv1
-%defattr(-,root,root,-)
 %{_libdir}/libGLESv1_CM.so.*
 
 %files libGLESv1-devel
-%defattr(-,root,root,-)
 %{_libdir}/libGLESv1_CM.so
 %{_includedir}/GLES
 %{_libdir}/pkgconfig/glesv1_cm.pc
 
 %files libGLESv2
-%defattr(-,root,root,-)
 %{_libdir}/libGLESv2.so.2*
 
 %files libGLESv2-devel
-%defattr(-,root,root,-)
 %{_includedir}/GLES2
 %{_includedir}/GLES3
 %{_libdir}/libGLESv2.so
 %{_libdir}/pkgconfig/glesv2.pc
 
 %files libOpenCL
-%defattr(-,root,root,-)
 %{_libdir}/libOpenCL.so.*
 
 %files libOpenCL-devel
-%defattr(-,root,root,-)
 %{_includedir}/CL
 %{_libdir}/libOpenCL.so
 %{_libdir}/pkgconfig/OpenCL.pc
 
 %files libwayland-egl
-%defattr(-,root,root,-)
 %{_libdir}/libhybris/eglplatform_wayland.so
 
 %files libhardware
-%defattr(-,root,root,-)
 %{_libdir}/libhardware.so.*
 
 %files libhardware-devel
-%defattr(-,root,root,-)
 %{_libdir}/libhardware.so
 %{_libdir}/pkgconfig/libhardware.pc
 
 %files libsync
-%defattr(-,root,root,-)
 %{_libdir}/libsync.so.*
 
 %files libsync-devel
-%defattr(-,root,root,-)
 %{_libdir}/libsync.so
 %{_libdir}/pkgconfig/libsync.pc
 
 %files libnfc
-%defattr(-,root,root,-)
 %{_libdir}/libnfc_*.so.*
 
 %files libnfc-devel
-%defattr(-,root,root,-)
 %{_libdir}/libnfc_*.so
 %{_libdir}/pkgconfig/libnfc_*.pc
 
 %files libvibrator
-%defattr(-,root,root,-)
 %{_libdir}/libvibrator.so.*
 
 %files libvibrator-devel
-%defattr(-,root,root,-)
 %{_libdir}/libvibrator.so
 %{_libdir}/pkgconfig/libvibrator.pc
 
 %files libsf
-%defattr(-,root,root,-)
 %{_libdir}/libsf.so.*
 
 %files libsf-devel
-%defattr(-,root,root,-)
 %{_libdir}/libsf.so
 %{_libdir}/pkgconfig/libsf.pc
 
 %files libvulkan
-%defattr(-,root,root,-)
 %{_libdir}/libvulkan.so.*
 %{_libdir}/libhybris-vulkanplatformcommon.so.*
 %{_libdir}/libhybris/vulkanplatform_null.so
 %{_libdir}/libhybris/vulkanplatform_wayland.so
 
 %files tests
-%defattr(-,root,root,-)
 %{_bindir}/test_audio
 %{_bindir}/test_dlopen
 %{_bindir}/test_egl
@@ -527,7 +505,6 @@ find -H "$RPM_BUILD_ROOT" -name "*.la" -a \( -type f -o -type l \) -delete
 %{_bindir}/test_wifi
 
 %files tests-upstream
-%defattr(-,root,root,-)
 %{_libdir}/libcamera.so.*
 %{_libdir}/libis.so.*
 %{_libdir}/libmedia.so.*
