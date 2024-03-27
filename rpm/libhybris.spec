@@ -1,3 +1,13 @@
+#%%if 0%%{?qa_stage_devel:1}
+#%%bcond_without arm_tracing
+#%%bcond_without trace
+#%%bcond_without debug
+#%%else
+%bcond_with arm_tracing
+%bcond_with trace
+%bcond_with debug
+#%%end
+
 Name:      libhybris
 Version:   0.0.0
 Release:   1%{?dist}
@@ -280,10 +290,10 @@ Requires:  %{name} = %{version}-%{release}
 cd hybris
 %reconfigure \
   --enable-wayland \
-  %{?qa_stage_devel:--enable-debug} \
-  %{?qa_stage_devel:--enable-trace} \
+  %{?with_debug:--enable-debug} \
+  %{?with_trace:--enable-trace} \
 %ifnarch %{ix86}
-  %{?qa_stage_devel:--enable-arm-tracing} \
+  %{?with_arm_tracing:--enable-arm-tracing} \
 %endif
   --enable-property-cache \
 %ifarch %{arm}
