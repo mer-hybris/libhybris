@@ -317,6 +317,9 @@ rm -f %{buildroot}/%{_libdir}/*.la %{buildroot}/%{_libdir}/libhybris/*.la
 mkdir -p %{buildroot}%{_docdir}/%{name}-%{version}
 install -m0644 AUTHORS %{buildroot}%{_docdir}/%{name}-%{version}
 
+# For releases before Sailfish Os 4.6.0
+find -H "$RPM_BUILD_ROOT" -name "*.la" -a \( -type f -o -type l \) -delete
+
 %post -p /sbin/ldconfig
 %postun -p /sbin/ldconfig
 
@@ -366,7 +369,6 @@ install -m0644 AUTHORS %{buildroot}%{_docdir}/%{name}-%{version}
 %{_libdir}/libhwc2.so.*
 %{_bindir}/getprop
 %{_bindir}/setprop
-%{_libdir}/libhybris/linker/*.la
 %{_libdir}/libhybris/linker/*.so
 %{_libdir}/libwifi.so.*
 
